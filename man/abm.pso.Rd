@@ -10,6 +10,8 @@ abm.pso(objective, iterations = 100, iwc = 10, N = 20, phi1 = 2,
 \arguments{
 \item{objective}{An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}}
 
+\item{iterations}{The total number of interactions}
+
 \item{iwc}{The maximun number of iteractions without changes in the output}
 
 \item{N}{The Particle Swarm size}
@@ -19,8 +21,6 @@ abm.pso(objective, iterations = 100, iwc = 10, N = 20, phi1 = 2,
 \item{phi2}{Acceleration coefficient toward the global best}
 
 \item{W}{Inertia weight or Constriction coefficient}
-
-\item{iteractions}{The total number of interactions}
 }
 \description{
 An implementaion of Particle Swarm Optimization

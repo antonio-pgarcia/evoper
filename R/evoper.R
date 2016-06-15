@@ -204,7 +204,7 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
 #' method for parameter estimation of Individual-based models.
 #'
 #' @param objective An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
-#' @param iteractions The total number of interactions
+#' @param iterations The total number of interactions
 #' @param iwc The maximun number of iteractions without changes in the output
 #' @param N The Particle Swarm size
 #' @param phi1 Acceleration coefficient toward the previous best
@@ -297,7 +297,7 @@ abm.pso<- function(objective, iterations=100, iwc=10, N=20, phi1=2.0, phi2=2.0, 
 #' @param aproximations The number of aproximations
 #' @param replications The number of repetitions of each aproximation
 #' @param objective An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
-#' @param iteractions The total number of interactions
+#' @param iterations The total number of interactions
 #' @param iwc The maximun number of iteractions without changes in the output
 #' @param N The Particle Swarm size
 #' @param phi1 Acceleration coefficient toward the previous best
@@ -593,7 +593,7 @@ enforceBounds<- function(particles, factors) {
 #' @param TMIN The final temperature
 #' @param L The temperature length
 #' @param alpha The cooling ratio
-#' @param The neighborhood distance. The default value is 0.1 (10\%) of provided parameter range.
+#' @param d The neighborhood distance. The default value is 0.1 (10\%) of provided parameter range.
 #'
 #' @return The best solution. The first row is the best of all
 #' solutions and the second row the current best solution.
@@ -695,7 +695,7 @@ saa.neighborhood.t1<- function(f, S, d, n) {
   newS<- S
   for(i in sample(1:ncol(S),n)) {
     k<- colnames(S)[i]
-    distance<- (as.numeric(r$GetParameterValue(k,"max")) - as.numeric(r$GetParameterValue(k,"min"))) * d
+    distance<- (as.numeric(f$GetParameterValue(k,"max")) - as.numeric(f$GetParameterValue(k,"min"))) * d
     newS[,i]<- newS[,i] + newS[,i] * runif(1,-1,1) * distance
   }
   enforceBounds(as.data.frame(newS), f$parameters)

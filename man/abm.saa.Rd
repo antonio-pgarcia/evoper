@@ -17,7 +17,7 @@ abm.saa(objective, T0, TMIN, L, alpha, d = 0.1)
 
 \item{alpha}{The cooling ratio}
 
-\item{The}{neighborhood distance. The default value is 0.1 (10\%) of provided parameter range.}
+\item{d}{The neighborhood distance. The default value is 0.1 (10\%) of provided parameter range.}
 }
 \value{
 The best solution. The first row is the best of all
