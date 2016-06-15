@@ -1,0 +1,21 @@
+Package: evoper
+Type: Package
+Title: Evolutionary Parameter Estimation for 'Repast Simphony' Models
+Version: 0.1.0
+Date: 2016-06-14
+Authors@R: c(
+    person("Antonio", "Prestes Garcia", email = "antonio.pgarcia@alumnos.upm.es", role = c("aut","cre")),
+    person("Alfonso", " Rodriguez-Paton", email = "arpaton@fi.upm.es", role = c("aut","ths")))
+Maintainer: Antonio Prestes Garcia <antonio.pgarcia@alumnos.upm.es>
+URL: https://github.com/antonio-pgarcia/evoper
+Description: The EvoPER, Evolutionary Parameter Estimation for 'Repast Simphony'
+    Agent-Based framework, provides optimization driven parameter estimation methods
+    based on evolutionary computation techniques which could be more efficient and
+    require, in some cases, fewer model evaluations than other alternatives
+    relaying on experimental design.
+License: MIT + file LICENSE
+LazyData: TRUE
+Depends:
+    rrepast
+Imports:
+RoxygenNote: 5.0.1
