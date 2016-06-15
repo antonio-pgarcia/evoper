@@ -50,6 +50,7 @@ assert<- function(expresion, string) {
 #' @field parameters The parameter list for objective function
 #' @field value The results from objective function
 #'
+#' @importFrom methods new
 #' @export ObjectiveFunction
 #' @exportClass ObjectiveFunction
 ObjectiveFunction<- setRefClass("ObjectiveFunction",
@@ -106,6 +107,7 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
 #'
 #' @description PlainFunction Class
 #'
+#' @importFrom methods new
 #' @export PlainFunction
 #' @exportClass PlainFunction
 PlainFunction<- setRefClass("PlainFunction", contains = "ObjectiveFunction",
@@ -137,6 +139,7 @@ PlainFunction<- setRefClass("PlainFunction", contains = "ObjectiveFunction",
 #'
 #' @description RepastFunction class
 #'
+#' @importFrom methods new
 #' @export RepastFunction
 #' @exportClass RepastFunction
 RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
@@ -346,6 +349,7 @@ rangesearch.pso<- function(aproximations=10, replications=4, objective, iteratio
 #'
 #' @return The buffer b plus the element v minus the least recently added element
 #'
+#' @importFrom utils head
 #' @export
 cbuf<- function(b,v,e) {
   c(head(v,1),head(b,e))
@@ -623,6 +627,7 @@ enforceBounds<- function(particles, factors) {
 #'  abm.saa(f, 100, 1,  100, 0.75)
 #' }
 #'
+#' @importFrom stats runif
 #' @export
 abm.saa<- function(objective, T0, TMIN,  L, alpha, d=0.1) {
 

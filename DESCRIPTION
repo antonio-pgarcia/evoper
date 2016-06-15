@@ -18,4 +18,5 @@ LazyData: TRUE
 Depends:
     rrepast
 Imports:
+    methods
 RoxygenNote: 5.0.1
