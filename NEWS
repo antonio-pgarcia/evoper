@@ -1,0 +1,43 @@
+# Change Log
+This project adheres to [Semantic Versioning](http://semver.org/).
+
+## [Unreleased]
+### Added
+
+
+### Changed
+
+## EvoPER [0.1.0] (first realease) - 2016-05-22
+### Added
+- ObjectiveFunction
+- PlainFunction
+- RepastFunction
+- assert
+- pso.Velocity
+- pso.neighborhood.K2 Two neighbors
+- pso.neighborhood.K4 Non Neumann Neighborhood for Particle Searm
+- pso.neighborhood.KN Fully connected graph neighborhood
+- pso.lbest
+- pso.best Search for the best particle
+- pso.chi
+- cbuf A Simple circular buffer implementation
+- lowerBound
+- upperBound
+- enforceBounds
+- saa.neighborhood.t1 Neighborhood function for Simulated Annealing
+- abm.pso Entry point for Particle Swarm Optimization
+- abm.saa Entry point for Simulated Annealing
+- initSolution Generates a initial solution or particles
+
+### Changed
+
+### Fixed
+
+
+
+
+Writing abm.pso2.Rd
+
+
+
+
