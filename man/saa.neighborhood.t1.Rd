@@ -11,7 +11,7 @@ saa.neighborhood.t1(f, S, d, n)
 
 \item{S}{The current solution to find a neighbor}
 
-\item{d}{The distance from current solution S}
+\item{d}{The distance from current solution S \code{distance = (max - min) * d}}
 
 \item{n}{The number of parameters to be perturbed}
 }

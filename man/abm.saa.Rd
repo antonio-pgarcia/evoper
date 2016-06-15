@@ -4,7 +4,7 @@
 \alias{abm.saa}
 \title{abm.saa}
 \usage{
-abm.saa(objective, T0, TMIN, L, alpha)
+abm.saa(objective, T0, TMIN, L, alpha, d = 0.1)
 }
 \arguments{
 \item{objective}{An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}}
@@ -16,6 +16,12 @@ abm.saa(objective, T0, TMIN, L, alpha)
 \item{L}{The temperature length}
 
 \item{alpha}{The cooling ratio}
+
+\item{The}{neighborhood distance. The default value is 0.1 (10\%) of provided parameter range.}
+}
+\value{
+The best solution. The first row is the best of all
+solutions and the second row the current best solution.
 }
 \description{
 An implementation of Simulated Annealing Algorithm
@@ -25,7 +31,7 @@ models.
 \examples{
 \dontrun{
  ## A Repast defined function
- f<- RepastFunction$new("c:/usr/models/BactoSim(HaldaneEngine-1.0)","ds::Output",300)
+ f<- RepastFunction$new("/usr/models/BactoSim(HaldaneEngine-1.0)","ds::Output",300)
 
  ## or a plain function
 

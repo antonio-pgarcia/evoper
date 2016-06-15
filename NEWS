@@ -7,23 +7,23 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-## EvoPER [0.1.0] (first realease) - 2016-05-22
+## EvoPER [0.1.0] (first realease) - 2016-06-15
 ### Added
-- ObjectiveFunction
-- PlainFunction
-- RepastFunction
-- assert
-- pso.Velocity
+- ObjectiveFunction S4 Parent class for the objective function
+- PlainFunction S4 Child class of ObjectiveFunction for estimating parameters of plain math functions
+- RepastFunction S4 Child class of ObjectiveFunction for estimating parameters of Repast models
+- assert Checks if some required precondition holds and stop execution if not
+- pso.Velocity Calculate the particle velocity
 - pso.neighborhood.K2 Two neighbors
 - pso.neighborhood.K4 Non Neumann Neighborhood for Particle Searm
 - pso.neighborhood.KN Fully connected graph neighborhood
-- pso.lbest
+- pso.lbest Seach for the best neighbor
 - pso.best Search for the best particle
-- pso.chi
+- pso.chi Calculates the constriction coefficient
 - cbuf A Simple circular buffer implementation
-- lowerBound
-- upperBound
-- enforceBounds
+- lowerBound Check lower bound
+- upperBound Check upper bound
+- enforceBounds Check the lower and upper bounds
 - saa.neighborhood.t1 Neighborhood function for Simulated Annealing
 - abm.pso Entry point for Particle Swarm Optimization
 - abm.saa Entry point for Simulated Annealing

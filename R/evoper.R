@@ -36,6 +36,11 @@ assert<- function(expresion, string) {
 }
 
 
+##
+## ----- Classes for the objective function
+##
+
+
 #' @title ObjectiveFunction class
 #'
 #' @description The base class for optimization functions.
@@ -243,7 +248,7 @@ abm.pso<- function(objective, iterations=100, iwc=10, N=20, phi1=2.0, phi2=2.0, 
     Pg[i,]<- Pi[lbest[i,"pset"],]
   }
 
-  vi<- Pi * 0.1
+  vi<- Pi * 0.2
 
   fitness.v<- cbuf(c(),(pso.best(lbest, Pg))[1,"fitness"], iwc)
 
@@ -277,14 +282,31 @@ abm.pso<- function(objective, iterations=100, iwc=10, N=20, phi1=2.0, phi2=2.0, 
     fitness.v<- cbuf(fitness.v, f.v, iwc)
   }
 
-  print(paste("index=", index, "fitness=", fitness.v))
+  #-- print(paste("index=", index, "fitness=", fitness.v))
   return(pso.best(lbest, Pg))
 }
 
-#' @title abm.pso2
+#' @title rangesearch.pso
+#'
+#' @description This function tries to provide a better approximation to the
+#' best solution when no information is available on the correct range of
+#' input parameters for the objective function. Basically the function search
+#' for the best cost n replications and adjust the range based on that value
+#' of best particles and a 10% of initially provided range.
+#'
+#' @param aproximations The number of aproximations
+#' @param replications The number of repetitions of each aproximation
+#' @param objective An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
+#' @param iteractions The total number of interactions
+#' @param iwc The maximun number of iteractions without changes in the output
+#' @param N The Particle Swarm size
+#' @param phi1 Acceleration coefficient toward the previous best
+#' @param phi2 Acceleration coefficient toward the global best
+#' @param W Inertia weight or Constriction coefficient
+
 #'
 #' @export
-abm.pso2<- function(aproximations, replications, objective, iterations=100, N=20, phi1=2.0, phi2=2.0, W=0) {
+rangesearch.pso<- function(aproximations=10, replications=4, objective, iterations=30, iwc=10, N=10, phi1=2.0, phi2=2.0, W=0) {
 
   o<- objective$copy()
 
@@ -292,7 +314,7 @@ abm.pso2<- function(aproximations, replications, objective, iterations=100, N=20
     v<- c()
 
     for(r in 1:replications) {
-      v<- rbind(v,abm.pso(o, iterations, N, phi1, phi2,W))
+      v<- rbind(v,abm.pso(o, iterations, iwc, N, phi1, phi2,W))
     }
 
     indz<- which(v == min(v$fitness), arr.ind = TRUE)
@@ -347,6 +369,15 @@ pso.best<- function(objective, particles) {
   return(particle)
 }
 
+#' @title pso.printbest
+#'
+#' @description Shows the best particle of each of simulated generations
+#'
+#' @param objective An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
+#' @param particles The current particle population
+#' @param generation The current generation
+#' @param title Some informational text to be shown
+#'
 pso.printbest<- function(objective, particles, generation, title) {
   particle<- pso.best(objective, particles)
   print(paste0("[", generation, "] ", title, " --------------------"))
@@ -545,9 +576,11 @@ enforceBounds<- function(particles, factors) {
   return(v)
 }
 
+
 ##
 ## ----- Simulated Annealing Algorithm
 ##
+
 
 #' @title abm.saa
 #'
@@ -560,6 +593,10 @@ enforceBounds<- function(particles, factors) {
 #' @param TMIN The final temperature
 #' @param L The temperature length
 #' @param alpha The cooling ratio
+#' @param The neighborhood distance. The default value is 0.1 (10\%) of provided parameter range.
+#'
+#' @return The best solution. The first row is the best of all
+#' solutions and the second row the current best solution.
 #'
 #' @references
 #'
@@ -568,7 +605,7 @@ enforceBounds<- function(particles, factors) {
 #'
 #' @examples \dontrun{
 #'  ## A Repast defined function
-#'  f<- RepastFunction$new("c:/usr/models/BactoSim(HaldaneEngine-1.0)","ds::Output",300)
+#'  f<- RepastFunction$new("/usr/models/BactoSim(HaldaneEngine-1.0)","ds::Output",300)
 #'
 #'  ## or a plain function
 #'
@@ -587,7 +624,7 @@ enforceBounds<- function(particles, factors) {
 #' }
 #'
 #' @export
-abm.saa<- function(objective, T0, TMIN,  L, alpha) {
+abm.saa<- function(objective, T0, TMIN,  L, alpha, d=0.1) {
 
   ## Initial solution
   S<- initSolution(objective$parameters,1)
@@ -608,7 +645,7 @@ abm.saa<- function(objective, T0, TMIN,  L, alpha) {
     ## Temperature Length (L) loop
     for(l in 1:L) {
       ## Evaluate some neighbor of S
-      S1<- saa.neighborhood.t1(objective,S,10,1)
+      S1<- saa.neighborhood.t1(objective,S,d,1)
       objective$Evaluate(S1)
       f1<- objective$Value()
       C1<- f1[1,"fitness"]
@@ -624,9 +661,8 @@ abm.saa<- function(objective, T0, TMIN,  L, alpha) {
         SS<- S1
         ff<- f1
       } else {
-        ## Uphill with P exp^-DELTA/t
+        ## Uphill with P = exp^-DELTA/t
         if(runif(1,0,1) < exp(-DELTA/t)) {
-          #print(paste("uphill P=",exp(-DELTA/t)))
           S<- S1
           f<- f1
           C<- C1
@@ -648,7 +684,7 @@ abm.saa<- function(objective, T0, TMIN,  L, alpha) {
 #'
 #' @param f An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
 #' @param S The current solution to find a neighbor
-#' @param d The distance from current solution S \code{distance = (max - min)/d}
+#' @param d The distance from current solution S \code{distance = (max - min) * d}
 #' @param n The number of parameters to be perturbed
 #'
 #' @return The neighbor of solution S
@@ -659,7 +695,7 @@ saa.neighborhood.t1<- function(f, S, d, n) {
   newS<- S
   for(i in sample(1:ncol(S),n)) {
     k<- colnames(S)[i]
-    distance<- (as.integer(r$GetParameterValue(k,"max")) - as.integer(r$GetParameterValue(k,"min")))/d
+    distance<- (as.numeric(r$GetParameterValue(k,"max")) - as.numeric(r$GetParameterValue(k,"min"))) * d
     newS[,i]<- newS[,i] + newS[,i] * runif(1,-1,1) * distance
   }
   enforceBounds(as.data.frame(newS), f$parameters)
