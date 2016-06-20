@@ -58,7 +58,10 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
     object = 'ANY',
     objective = 'function',
     parameters = 'ANY',
-    value = 'ANY'),
+    value = 'ANY',
+    tolerance = 'ANY',
+    converged = 'ANY',
+    counter = 'ANY'),
 
   methods = list(
     initialize = function(funct) {
@@ -66,6 +69,16 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
       objective<<- funct
       parameters<<- NULL
       value<<- NULL
+      tolerance<<- .Machine$double.eps^0.30
+      converged<<- FALSE
+      counter<<- 0
+    },
+
+    isConverged = function(v) {
+      if(!converged) {
+        converged<<- (v <= tolerance)
+      }
+      converged
     },
 
     Parameter = function(name, min, max) {
@@ -78,6 +91,10 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
 
     GetParameter = function(key) {
       parameters[which(parameters[,"name"] == key),]
+    },
+
+    GetParameterNames = function() {
+      parameters[,"name"]
     },
 
     GetParameterValue = function(key, name) {
@@ -98,6 +115,14 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
     Evaluate = function(swarm) {
       assert(!is.null(objective),"The objective has not been provided!")
       assert(!is.null(swarm),"Swarm must not be null!")
+
+      ## Stats: Update the call counter
+      counter<<- counter + nrow(swarm)
+    },
+
+    EvaluateV = function(swarm) {
+      Evaluate(swarm)
+      Value()
     }
 
   )
@@ -120,16 +145,13 @@ PlainFunction<- setRefClass("PlainFunction", contains = "ObjectiveFunction",
       callSuper(o)
     },
 
+    EvaluateV1 = function(swarm) {
+      Value(as.data.frame(t(apply(expand.grid(j=1,i=nrow(swarm)),1,function(k) { c(pset=as.integer(k[2]),fitness=objective(unlist(x[k[2],]))) }))))
+    },
+
     Evaluate = function(swarm) {
       callSuper(swarm)
-
-      v<- c()
-      for(i in 1:nrow(swarm)){
-        p<- sapply(1:length(swarm[i,]),function(j,d) {d[,j]}, d = swarm[i,] )
-        f<- do.call(objective,as.list(p))
-        v<- rbind(v,cbind(pset=i,fitness=f))
-      }
-      v<- Value(as.data.frame(v))
+      v<- Value(as.data.frame(t(apply(expand.grid(j=1,i=1:nrow(swarm)),1,function(k) { c(pset=as.integer(k[2]),fitness=do.call(objective,swarm[k[2],])) }))))
     }
   )
 
@@ -185,7 +207,6 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
       names(object$output)<<- replace(n, which(n == "total"),c("fitness"))
 
       Value(object$output)
-
     },
 
     show = function() {
@@ -194,6 +215,11 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
       print(paste("Simulation time is .... [",endAt,"]"))
     })
 )
+
+
+##
+## ----- Entry point function
+##
 
 
 ##
@@ -208,11 +234,11 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
 #'
 #' @param objective An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
 #' @param iterations The total number of interactions
-#' @param iwc The maximun number of iteractions without changes in the output
 #' @param N The Particle Swarm size
 #' @param phi1 Acceleration coefficient toward the previous best
 #' @param phi2 Acceleration coefficient toward the global best
 #' @param W Inertia weight or Constriction coefficient
+#' @param n The neigborhood function
 #'
 #' @examples \dontrun{
 #'  f<- RepastFunction$new("c:/usr/models/BactoSim(HaldaneEngine-1.0)","ds::Output",300)
@@ -222,7 +248,7 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
 #'  f$addFactor(name="pilusExpressionCost",min=0,max=100)
 #'  f$addFactor(name="gamma0",min=1,max=10)
 #'
-#'  abm.pso(f, iwc= 10, iterations=100, N=20, phi1, phi2)
+#'  abm.pso(f, iterations=100)
 #' }
 #'
 #' @references
@@ -233,110 +259,94 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
 #' [2] Poli, R., Kennedy, J., & Blackwell, T. (2007). Particle swarm optimization.
 #' Swarm Intelligence, 1(1), 33-57.
 #'
+#'
 #' @importFrom rrepast col.sum
 #' @export
-abm.pso<- function(objective, iterations=100, iwc=10, N=20, phi1=2.0, phi2=2.0, W=0) {
+abm.pso<- function(objective, iterations=100, N=16, phi1=1.193, phi2=1.193, W=0.721, n=pso.neighborhood.KN) {
+  f.neighborhood<- n
+  Pg<- Pi<- x<- initSolution(objective$parameters,N)
+  lbest<- pbest<- objective$EvaluateV(x)
+  Pi<- x
 
-  particles<- initSolution(objective$parameters,N)
-  objective$Evaluate(particles)
-
-  Pi<- particles
-  f0<- objective$Value()
-  pbest<- f0
-  lbest<- f0
-  Pg<- Pi
-
-  for(i in nrow(f0)){
-    lbest[i,]<- pso.lbest(i,pbest,pso.neighborhood.K4)
+  for(i in 1:nrow(x)){
+    lbest[i,]<- pso.lbest(i,pbest,f.neighborhood)
     Pg[i,]<- Pi[lbest[i,"pset"],]
   }
 
-  vi<- Pi * 0.2
-
-  fitness.v<- cbuf(c(),(pso.best(lbest, Pg))[1,"fitness"], iwc)
+  vi<- Pi * 0.1
 
   for(index in 1:iterations) {
+    vi<- pso.Velocity(W,vi,phi1,phi2,Pi,Pg,x)
+    x<- enforceBounds((x + vi), objective$parameters)
 
-    vi<- pso.Velocity(W,vi,phi1,phi2,Pi,Pg,particles)
-    particles<- enforceBounds((particles + vi), objective$parameters)
+    f1<- objective$EvaluateV(x)
 
-
-    objective$Evaluate(particles)
-    f1<- objective$Value()
-
-    for(i in nrow(f1)){
+    for(i in 1:nrow(x)){
       if(f1[i,"fitness"] < pbest[i,"fitness"]) {
         pbest[i,"fitness"]<- f1[i,"fitness"]
-        Pi[i,]<- particles[i,]
-      }
-
-      gbest<- pso.lbest(i,f1,pso.neighborhood.K4)
-      if(gbest[1,"fitness"] < lbest[i,"fitness"]) {
-        lbest[i,]<- gbest
-        Pg[i,]<- particles[lbest[i,"pset"],]
+        Pi[i,]<- x[i,]
       }
     }
 
-
-    ## Exit if the last iwc iteractions do no produce changes
-    ## in the output.
-    f.v<- (pso.best(lbest, Pg))[1,"fitness"]
-    if(index > iwc && abs(mean(fitness.v)-f.v) < 0.0001) break;
-    fitness.v<- cbuf(fitness.v, f.v, iwc)
-  }
-
-  #-- print(paste("index=", index, "fitness=", fitness.v))
-  return(pso.best(lbest, Pg))
+    for(i in 1:nrow(x)){
+      gbest<- pso.lbest(i,pbest,f.neighborhood)
+      if(gbest[1,"fitness"] < lbest[i,"fitness"]) {
+        lbest[i,]<- gbest
+        Pg[i,]<- Pi[lbest[i,"pset"],]
+      }
+      if(objective$isConverged(gbest[1,"fitness"])) break
+    }
+ }
+ return(pso.best(lbest, Pg))
 }
 
-#' @title rangesearch.pso
+#' @title Simulated Dilution Approximation
 #'
 #' @description This function tries to provide a better approximation to the
 #' best solution when no information is available on the correct range of
 #' input parameters for the objective function. Basically the function search
 #' for the best cost n replications and adjust the range based on that value
-#' of best particles and a 10% of initially provided range.
+#' of best particles and a 10^-1 of initially provided range.
 #'
-#' @param aproximations The number of aproximations
-#' @param replications The number of repetitions of each aproximation
 #' @param objective An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
-#' @param iterations The total number of interactions
-#' @param iwc The maximun number of iteractions without changes in the output
-#' @param N The Particle Swarm size
-#' @param phi1 Acceleration coefficient toward the previous best
-#' @param phi2 Acceleration coefficient toward the global best
-#' @param W Inertia weight or Constriction coefficient
-
-#'
+#' @param steps The number of dilution steps
 #' @export
-rangesearch.pso<- function(aproximations=10, replications=4, objective, iterations=30, iwc=10, N=10, phi1=2.0, phi2=2.0, W=0) {
+abm.sda<- function(objective, steps=4) {
 
   o<- objective$copy()
 
-  for(a in 1:aproximations) {
-    v<- c()
+  v0<- abm.pso(o, iterations=13)
+  f0<- v0$fitness
 
-    for(r in 1:replications) {
-      v<- rbind(v,abm.pso(o, iterations, iwc, N, phi1, phi2,W))
+  for(s in 1:steps) {
+
+    o1<- o$copy()
+    for(k in o$GetParameterNames()) {
+      min0<- as.numeric(o$GetParameterValue(k,"min"))
+      max0<- as.numeric(o$GetParameterValue(k,"max"))
+
+      max1<- max0 * .90^s * runif(1, .6, 1)
+      min1<- min0 * .90^s * runif(1, .6, 1)
+
+      o1$parameters[ o1$parameters[,"name"] == k,"min"]<- ifelse(min1 > min0, min1, min0)
+      o1$parameters[ o1$parameters[,"name"] == k,"max"]<- ifelse(max1 < max0, max1, max0)
     }
 
-    indz<- which(v == min(v$fitness), arr.ind = TRUE)
-    indz<- as.integer(indz[,"row"])
-    vv<- v[indz,]
+    v<- abm.pso(o1, iterations=13)
+    print("************************************************************")
+    print(o1$parameters)
+    print("------------------------------------------------------------")
+    print(paste("[",s,"]","f0=",f0,"f1=",v$fitness))
+    print("************************************************************")
 
-    for(k in o$parameters[,"name"]) {
-      value<- vv[,k]
-      p.min<- as.numeric(objective$parameters[ objective$parameters[,"name"] == k,"min"])
-      p.max<- as.numeric(objective$parameters[ objective$parameters[,"name"] == k,"max"])
-
-      v.max<- value + (p.max - p.min)*0.1
-      v.min<- value - (p.max - p.min)*0.1
-
-      o$parameters[ o$parameters[,"name"] == k,"min"]<- ifelse(v.min > p.min, v.min, p.min)
-      o$parameters[ o$parameters[,"name"] == k,"max"]<- ifelse(v.max < p.max, v.max, p.max)
+    if(v$fitness < f0) {
+      f0<- v$fitness
+      v0<- v
+      o<- o1
     }
   }
-  return(v)
+  eval.parent(substitute(objective<-o))
+  return(v0)
 }
 
 #' @title cbuf
@@ -451,7 +461,7 @@ pso.neighborhood.K2<- function(i,n) {
 #' @export
 pso.neighborhood.K4<- function(i,n) {
   assert((i >= 1 && i <= n),"Invalid particle position")
-  m<- matrix(seq(1,n),nrow=(ceiling(sqrt(n))))
+  m<- matrix(seq(1,n),nrow=(floor(sqrt(n))))
   p<- which(m == i, arr.ind = TRUE)
   p.row<- as.integer(p[1,"row"])
   p.col<- as.integer(p[1,"col"])
@@ -474,6 +484,10 @@ pso.neighborhood.K4<- function(i,n) {
 #' @export
 pso.neighborhood.KN<- function(i,n) {
   return(seq(1,n))
+}
+
+pso.neighborhood.KR<- function(i,n) {
+  sample(setdiff(seq(1,n),c(i)),4)
 }
 
 #' @title pso.lbest
@@ -676,6 +690,7 @@ abm.saa<- function(objective, T0, TMIN,  L, alpha, d=0.1) {
     }
     ## Cooling scheme
     t<- alpha * t
+    print(paste("T=", t, "TMIN=",TMIN))
   }
   v<- c()
   v<- rbind(v,merge(SS,ff[1,c("pset","fitness")]))
@@ -705,3 +720,24 @@ saa.neighborhood.t1<- function(f, S, d, n) {
   }
   enforceBounds(as.data.frame(newS), f$parameters)
 }
+
+
+##
+## ----- Test functions
+##
+
+#' @title Test function
+#'
+#' @description f(1,2,3,4) = 0
+#' @export
+f0.test<- function(x1,x2,x3,x4) { 10 * (x1 - 1)^2 + 20 * (x2 - 2)^2 + 30 * (x3 - 3)^2 + 40 * (x4 - 4)^2 }
+#' @export
+f1.test<- function(x) { f0.test(x[1],x[2],x[3],x[4]) }
+
+#' @title Rosenbrock function
+#'
+#' @description Two variable Rosebrock function, where f(1,1) = 0
+#' @export
+f0.rosenbrock2<- function(x1, x2) { (1 - x1)^2 + 100 * (x2 - x1^2)^2 }
+#' @export
+f1.rosenbrock2<- function(x) { f0.rosenbrock2(x[1], x[2]) }

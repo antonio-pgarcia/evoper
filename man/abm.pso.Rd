@@ -4,15 +4,13 @@
 \alias{abm.pso}
 \title{abm.pso}
 \usage{
-abm.pso(objective, iterations = 100, iwc = 10, N = 20, phi1 = 2,
-  phi2 = 2, W = 0)
+abm.pso(objective, iterations = 100, N = 16, phi1 = 1.193, phi2 = 1.193,
+  W = 0.721)
 }
 \arguments{
 \item{objective}{An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}}
 
 \item{iterations}{The total number of interactions}
-
-\item{iwc}{The maximun number of iteractions without changes in the output}
 
 \item{N}{The Particle Swarm size}
 
@@ -46,5 +44,7 @@ Networks (Vol. 4, pp. 1942-1948). IEEE.
 
 [2] Poli, R., Kennedy, J., & Blackwell, T. (2007). Particle swarm optimization.
 Swarm Intelligence, 1(1), 33-57.
+
+v<- abm.pso(f, iwc=1000, iterations=200, N=14, phi1=1.193, phi2=1.193,0.721)
 }
 
