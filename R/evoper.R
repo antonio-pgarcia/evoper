@@ -89,6 +89,10 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
       }
     },
 
+    GetParameterRange = function(key) {
+      as.numeric(parameters[which(parameters[,"name"] == key),"max"]) - as.numeric(parameters[which(parameters[,"name"] == key),"min"])
+    },
+
     GetParameter = function(key) {
       parameters[which(parameters[,"name"] == key),]
     },
@@ -143,10 +147,6 @@ PlainFunction<- setRefClass("PlainFunction", contains = "ObjectiveFunction",
         o<- objective
       }
       callSuper(o)
-    },
-
-    EvaluateV1 = function(swarm) {
-      Value(as.data.frame(t(apply(expand.grid(j=1,i=nrow(swarm)),1,function(k) { c(pset=as.integer(k[2]),fitness=objective(unlist(x[k[2],]))) }))))
     },
 
     Evaluate = function(swarm) {
@@ -221,6 +221,41 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
 ## ----- Entry point function
 ##
 
+#' @title extremize
+#'
+#' @description Entry point for optimization functions
+#'
+#' @param objective An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
+#' @param iterations The total number of interactions
+#'
+#' @examples \dontrun{
+#'  f<- PlainFunction$new(f0.rosenbrock2)
+#'
+#'  f$Parameter(name="x1",min=-100,max=100)
+#'  f$Parameter(name="x2",min=-100,max=100)
+#'
+#'  extremize("pso", f)
+#' }
+#'
+#' @export
+extremize<- function(type, objective, iterations= 100) {
+
+  switch(type,
+    pso={
+      optimization.fun<- abm.pso
+    },
+
+    saa={
+      optimization.fun<- abm.saa
+    },
+
+    {
+      stop("Invalid optimization function!")
+    }
+  )
+
+  optimization.fun(objective,iterations=iterations)
+}
 
 ##
 ## ----- Particle Swarm Optimization functions
@@ -238,15 +273,15 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
 #' @param phi1 Acceleration coefficient toward the previous best
 #' @param phi2 Acceleration coefficient toward the global best
 #' @param W Inertia weight or Constriction coefficient
-#' @param n The neigborhood function
+#' @param f.neighborhood The neigborhood function
 #'
 #' @examples \dontrun{
 #'  f<- RepastFunction$new("c:/usr/models/BactoSim(HaldaneEngine-1.0)","ds::Output",300)
 #'
-#'  f$addFactor(name="cyclePoint",min=0,max=90)
-#'  f$addFactor(name="conjugationCost",min=0,max=100)
-#'  f$addFactor(name="pilusExpressionCost",min=0,max=100)
-#'  f$addFactor(name="gamma0",min=1,max=10)
+#'  f$Parameter(name="cyclePoint",min=0,max=90)
+#'  f$Parameter(name="conjugationCost",min=0,max=100)
+#'  f$Parameter(name="pilusExpressionCost",min=0,max=100)
+#'  f$Parameter(name="gamma0",min=1,max=10)
 #'
 #'  abm.pso(f, iterations=100)
 #' }
@@ -262,8 +297,8 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
 #'
 #' @importFrom rrepast col.sum
 #' @export
-abm.pso<- function(objective, iterations=100, N=16, phi1=1.193, phi2=1.193, W=0.721, n=pso.neighborhood.KN) {
-  f.neighborhood<- n
+abm.pso<- function(objective, iterations=100, N=16, phi1=1.193, phi2=1.193, W=0.721, f.neighborhood=pso.neighborhood.KN) {
+
   Pg<- Pi<- x<- initSolution(objective$parameters,N)
   lbest<- pbest<- objective$EvaluateV(x)
   Pi<- x
@@ -315,7 +350,8 @@ abm.sda<- function(objective, steps=4) {
 
   o<- objective$copy()
 
-  v0<- abm.pso(o, iterations=13)
+  #v<- v0<- abm.pso(o, iterations=13)
+  v<- v0<- extremize("saa", o, iterations=13)
   f0<- v0$fitness
 
   for(s in 1:steps) {
@@ -325,19 +361,28 @@ abm.sda<- function(objective, steps=4) {
       min0<- as.numeric(o$GetParameterValue(k,"min"))
       max0<- as.numeric(o$GetParameterValue(k,"max"))
 
-      max1<- max0 * .90^s * runif(1, .6, 1)
-      min1<- min0 * .90^s * runif(1, .6, 1)
+      #max1<- max0 * .90^s * runif(1, .6, 1)
+      #min1<- min0 * .90^s * runif(1, .6, 1)
+      #print(paste("k=", k, "v",v[1,k]))
+
+      U<- runif(1, .9, 1)
+      rmax1<-  (max0 * .90^s * U)
+      rmin1<-  (min0 * .90^s * U)
+      max1<- v[1,k] * .10 + (rmax1 - rmin1)/2
+      min1<- v[1,k] * .10 - (rmax1 - rmin1)/2
 
       o1$parameters[ o1$parameters[,"name"] == k,"min"]<- ifelse(min1 > min0, min1, min0)
       o1$parameters[ o1$parameters[,"name"] == k,"max"]<- ifelse(max1 < max0, max1, max0)
     }
 
-    v<- abm.pso(o1, iterations=13)
     print("************************************************************")
     print(o1$parameters)
     print("------------------------------------------------------------")
     print(paste("[",s,"]","f0=",f0,"f1=",v$fitness))
     print("************************************************************")
+
+    #v<- abm.pso(o1, iterations=13)
+    v<- extremize("saa", o1, iterations=13)
 
     if(v$fitness < f0) {
       f0<- v$fitness
@@ -607,11 +652,13 @@ enforceBounds<- function(particles, factors) {
 #' models.
 #'
 #' @param objective An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
+#' @param iterations The total number of interactions (k_max)
 #' @param T0 The initial temperature
 #' @param TMIN The final temperature
 #' @param L The temperature length
 #' @param alpha The cooling ratio
 #' @param d The neighborhood distance. The default value is 0.1 (10\%) of provided parameter range.
+#' @param f.neighborhood The neigborhood function
 #'
 #' @return The best solution. The first row is the best of all
 #' solutions and the second row the current best solution.
@@ -643,62 +690,45 @@ enforceBounds<- function(particles, factors) {
 #'
 #' @importFrom stats runif
 #' @export
-abm.saa<- function(objective, T0, TMIN,  L, alpha, d=0.1) {
+abm.saa<- function(objective, iterations= 1000, T0=1000, TMIN=10^-15,  L=16, d=0.1, f.neighborhood=saa.neighborhood1, f.temp=saa.tbyk) {
+  ## Generates an initial solution
+  S0<- S<- initSolution(objective$parameters,1)
+  f0<- (f<- objective$EvaluateV(S0))
+  C<- C0<- f[1,"fitness"]
 
-  ## Initial solution
-  S<- initSolution(objective$parameters,1)
-  objective$Evaluate(S)
-  f<- objective$Value()
-  C<- f[1,"fitness"]
-
-  ## The best solution found
-  SS<- S
-  ff<- f
-
-  ## Initialize temperature t
-  t<- T0
-
-  ## Loop until t greater than minimun temperature
-  while(t > TMIN) {
-
-    ## Temperature Length (L) loop
+  for(k in 1:iterations) {
+    t<- f.temp(T0, k)
     for(l in 1:L) {
       ## Evaluate some neighbor of S
-      S1<- saa.neighborhood.t1(objective,S,d,1)
-      objective$Evaluate(S1)
-      f1<- objective$Value()
-      C1<- f1[1,"fitness"]
+      S1<- f.neighborhood(objective,S,d)
+      f1<- objective$EvaluateV(S1)
+      delta<- (C1<- f1[1,"fitness"]) - C
 
-      DELTA<- C1 - C
-
-      ## Downhill
-      if(DELTA <= 0) {
+      if(delta < 0 || runif(1,0,1) < exp(-delta/t)) {
         S<- S1
         f<- f1
         C<- C1
+      }
 
-        SS<- S1
-        ff<- f1
-      } else {
-        ## Uphill with P = exp^-DELTA/t
-        if(runif(1,0,1) < exp(-DELTA/t)) {
-          S<- S1
-          f<- f1
-          C<- C1
-        }
+      if(C < C0) {
+        S0<- S
+        f0<- f
+        C0<- C
       }
     }
-    ## Cooling scheme
-    t<- alpha * t
-    print(paste("T=", t, "TMIN=",TMIN))
+    #print(paste("temperature=",t, "T<TMIN", (t<= TMIN), "k=", k))
+    if(t <= TMIN) break;
+    if(objective$isConverged(f0[1,"fitness"])) break
   }
-  v<- c()
-  v<- rbind(v,merge(SS,ff[1,c("pset","fitness")]))
-  v<- rbind(v,merge(S,f[1,c("pset","fitness")]))
+
+  #v<- c()
+  #v<- rbind(v,merge(S0,f0[1,c("pset","fitness")]))
+  #v<- rbind(v,merge(S,f[1,c("pset","fitness")]))
+  v<- merge(S0,f0[1,c("pset","fitness")])
   return(v)
 }
 
-#' @title saa.neighborhood.t1
+#' @title saa.neighborhood
 #'
 #' @description Generates neighbor solutions for simulated annealing
 #'
@@ -710,17 +740,77 @@ abm.saa<- function(objective, T0, TMIN,  L, alpha, d=0.1) {
 #' @return The neighbor of solution S
 #'
 #' @export
-saa.neighborhood.t1<- function(f, S, d, n) {
+saa.neighborhood<- function(f, S, d, n) {
   assert(n > 0 && n <= ncol(S),"Invalid number of parameters to be perturbed!")
   newS<- S
   for(i in sample(1:ncol(S),n)) {
     k<- colnames(S)[i]
-    distance<- (as.numeric(f$GetParameterValue(k,"max")) - as.numeric(f$GetParameterValue(k,"min"))) * d
+    distance<- f$GetParameterRange(k) * d
     newS[,i]<- newS[,i] + newS[,i] * runif(1,-1,1) * distance
   }
   enforceBounds(as.data.frame(newS), f$parameters)
 }
 
+
+#' @title saa.neighborhood1
+#'
+#' @description Generates neighbor solutions perturbing one parameter from current
+#' solution \code{S} picked randonly.
+#'
+#' @param f An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
+#' @param S The current solution to find a neighbor
+#' @param d The distance from current solution S \code{distance = (max - min) * d}
+#'
+#' @return The neighbor of solution of S
+#'
+#' @export
+saa.neighborhood1<- function(f, S, d) {
+  saa.neighborhood(f, S, d, 1)
+}
+
+#' @title saa.neighborhoodH
+#'
+#' @description Generates neighbor solutions perturbing half parameters from current
+#' solution \code{S}.
+#'
+#' @param f An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
+#' @param S The current solution to find a neighbor
+#' @param d The distance from current solution S \code{distance = (max - min) * d}
+#'
+#' @return The neighbor of solution of S
+#'
+#' @export
+saa.neighborhoodH<- function(f, S, d) {
+  saa.neighborhood(f, S, d, floor(ncol(S)/2))
+}
+
+#' @title saa.neighborhoodN
+#'
+#' @description Generates neighbor solutions perturbing all parameters from current
+#' solution \code{S}.
+#'
+#' @param f An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
+#' @param S The current solution to find a neighbor
+#' @param d The distance from current solution S \code{distance = (max - min) * d}
+#'
+#' @return The neighbor of solution of S
+#'
+#' @export
+saa.neighborhoodN<- function(f, S, d) {
+  saa.neighborhood(f, S, d, ncol(S))
+}
+
+saa.tbyk<- function(t0, k) {
+  t0 / k
+}
+
+saa.texp<- function(t0, k) {
+  t0 * 0.95^k
+}
+
+saa.bolt<- function(t0, k) {
+  t0 / log(k)
+}
 
 ##
 ## ----- Test functions

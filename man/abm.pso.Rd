@@ -5,7 +5,7 @@
 \title{abm.pso}
 \usage{
 abm.pso(objective, iterations = 100, N = 16, phi1 = 1.193, phi2 = 1.193,
-  W = 0.721)
+  W = 0.721, f.neighborhood = pso.neighborhood.KN)
 }
 \arguments{
 \item{objective}{An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}}
@@ -19,6 +19,8 @@ abm.pso(objective, iterations = 100, N = 16, phi1 = 1.193, phi2 = 1.193,
 \item{phi2}{Acceleration coefficient toward the global best}
 
 \item{W}{Inertia weight or Constriction coefficient}
+
+\item{f.neighborhood}{The neigborhood function}
 }
 \description{
 An implementaion of Particle Swarm Optimization
@@ -28,12 +30,12 @@ method for parameter estimation of Individual-based models.
 \dontrun{
  f<- RepastFunction$new("c:/usr/models/BactoSim(HaldaneEngine-1.0)","ds::Output",300)
 
- f$addFactor(name="cyclePoint",min=0,max=90)
- f$addFactor(name="conjugationCost",min=0,max=100)
- f$addFactor(name="pilusExpressionCost",min=0,max=100)
- f$addFactor(name="gamma0",min=1,max=10)
+ f$Parameter(name="cyclePoint",min=0,max=90)
+ f$Parameter(name="conjugationCost",min=0,max=100)
+ f$Parameter(name="pilusExpressionCost",min=0,max=100)
+ f$Parameter(name="gamma0",min=1,max=10)
 
- abm.pso(f, iwc= 10, iterations=100, N=20, phi1, phi2)
+ abm.pso(f, iterations=100)
 }
 
 }
@@ -44,7 +46,5 @@ Networks (Vol. 4, pp. 1942-1948). IEEE.
 
 [2] Poli, R., Kennedy, J., & Blackwell, T. (2007). Particle swarm optimization.
 Swarm Intelligence, 1(1), 33-57.
-
-v<- abm.pso(f, iwc=1000, iterations=200, N=14, phi1=1.193, phi2=1.193,0.721)
 }
 

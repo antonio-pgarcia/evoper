@@ -7,6 +7,18 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
+## EvoPER [0.2.0] - 2016-06-20
+### Added
+- extremize the entry point for optimization functions
+
+
+### Changed
+
+
+### Fixed
+- Bug in abm.pso function
+
+
 ## EvoPER [0.1.0] (first realease) - 2016-06-15
 ### Added
 - ObjectiveFunction S4 Parent class for the objective function
@@ -32,12 +44,3 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 ### Fixed
-
-
-
-
-Writing abm.pso2.Rd
-
-
-
-

@@ -4,10 +4,13 @@
 \alias{abm.saa}
 \title{abm.saa}
 \usage{
-abm.saa(objective, T0, TMIN, L, alpha, d = 0.1)
+abm.saa(objective, iterations = 1000, T0 = 1000, TMIN = 10^-15, L = 16,
+  d = 0.8, f.neighborhood = saa.neighborhood1, f.temp = saa.texp)
 }
 \arguments{
 \item{objective}{An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}}
+
+\item{iterations}{The total number of interactions (k_max)}
 
 \item{T0}{The initial temperature}
 
@@ -15,9 +18,11 @@ abm.saa(objective, T0, TMIN, L, alpha, d = 0.1)
 
 \item{L}{The temperature length}
 
-\item{alpha}{The cooling ratio}
-
 \item{d}{The neighborhood distance. The default value is 0.1 (10\%) of provided parameter range.}
+
+\item{f.neighborhood}{The neigborhood function}
+
+\item{alpha}{The cooling ratio}
 }
 \value{
 The best solution. The first row is the best of all
