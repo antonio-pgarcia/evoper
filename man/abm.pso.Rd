@@ -4,23 +4,12 @@
 \alias{abm.pso}
 \title{abm.pso}
 \usage{
-abm.pso(objective, iterations = 100, N = 16, phi1 = 1.193, phi2 = 1.193,
-  W = 0.721, f.neighborhood = pso.neighborhood.KN)
+abm.pso(objective, options = NULL)
 }
 \arguments{
 \item{objective}{An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}}
 
-\item{iterations}{The total number of interactions}
-
-\item{N}{The Particle Swarm size}
-
-\item{phi1}{Acceleration coefficient toward the previous best}
-
-\item{phi2}{Acceleration coefficient toward the global best}
-
-\item{W}{Inertia weight or Constriction coefficient}
-
-\item{f.neighborhood}{The neigborhood function}
+\item{options}{An apropiate instance from a sublclass of \link{Options} class}
 }
 \description{
 An implementaion of Particle Swarm Optimization
@@ -35,7 +24,7 @@ method for parameter estimation of Individual-based models.
  f$Parameter(name="pilusExpressionCost",min=0,max=100)
  f$Parameter(name="gamma0",min=1,max=10)
 
- abm.pso(f, iterations=100)
+ abm.pso(f)
 }
 
 }
