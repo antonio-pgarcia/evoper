@@ -396,6 +396,7 @@ OptionsSDA<- setRefClass("OptionsSDA", contains = "Options",
 #'
 #' @description Entry point for optimization functions
 #'
+#' @param type The optimization method (pso,saa,sda,aco)
 #' @param objective An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
 #' @param options An apropiate instance from a sublclass of \link{Options} class
 #'
@@ -1108,19 +1109,44 @@ abm.aco<- function() {
 ## ----- Test functions
 ##
 
-#' @title Test function
+#' @title f0.test
 #'
-#' @description f(1,2,3,4) = 0
+#' @description Simple test function f(1,2,3,4) = 0
+#'
+#' @param x1 Parameter 1
+#' @param x2 Parameter 2
+#' @param x3 Parameter 3
+#' @param x4 Parameter 4
+#'
 #' @export
 f0.test<- function(x1,x2,x3,x4) { 10 * (x1 - 1)^2 + 20 * (x2 - 2)^2 + 30 * (x3 - 3)^2 + 40 * (x4 - 4)^2 }
+
+#' @title f1.test
+#'
+#' @description Simple test function f(c(1,2,3,4)) = 0
+#'
+#' @param x Parameter vector
+#'
 #' @export
 f1.test<- function(x) { f0.test(x[1],x[2],x[3],x[4]) }
 
-#' @title Rosenbrock function
+#' @title f0.rosenbrock2
 #'
 #' @description Two variable Rosebrock function, where f(1,1) = 0
+#'
+#' @param x1 Parameter 1
+#' @param x2 Parameter 2
+#'
 #' @export
 f0.rosenbrock2<- function(x1, x2) { (1 - x1)^2 + 100 * (x2 - x1^2)^2 }
+
+#' @title f1.rosenbrock2
+#'
+#' @description Two variable Rosebrock function, where f(c(1,1)) = 0
+#'
+#' @param x1 Parameter 1
+#' @param x2 Parameter 2
+#'
 #' @export
 f1.rosenbrock2<- function(x) { f0.rosenbrock2(x[1], x[2]) }
 
