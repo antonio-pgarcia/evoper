@@ -3,17 +3,35 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Added
-
+- abm.aco
 
 ### Changed
 
-## EvoPER [0.2.0] - 2016-06-20
+## EvoPER [0.2.0] - 2016-06-22
 ### Added
 - extremize the entry point for optimization functions
+- Options S4 Parent class for options
+- OptionsPSO S4 class for PSO Options
+- OptionsSAA S4 class for SAA Options
+- OptionsSDA S4 class for SDA Options
+- abm.sda Simulted dilution
+- saa.neighborhood Neighborhood for SAA
+- saa.neighborhood1 Neighborhood for SAA
+- saa.neighborhoodH Neighborhood for SAA
+- saa.neighborhoodN Neighborhood for SAA
+- saa.tbyk Temperature for SAA
+- saa.texp Temperature for SAA
+- saa.bolt Temperature for SAA
+- saa.tcte Temperature for SAA
+- f0.test Plain Test function
+- f0.rosenbrock2 Plain Rosenbrock 2 parms test function
 
 
 ### Changed
-
+- abm.pso Change in parameters
+- abm.saa Change in parameters
+- abm.sda Change in parameters
+- renamed saa.neighborhood.t1 now is - saa.neighborhood1
 
 ### Fixed
 - Bug in abm.pso function
