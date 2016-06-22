@@ -5,7 +5,7 @@
 \title{abm.saa}
 \usage{
 abm.saa(objective, iterations = 1000, T0 = 1000, TMIN = 10^-15, L = 16,
-  d = 0.8, f.neighborhood = saa.neighborhood1, f.temp = saa.texp)
+  d = 0.16, f.neighborhood = saa.neighborhoodN, f.temp = saa.tbyk)
 }
 \arguments{
 \item{objective}{An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}}

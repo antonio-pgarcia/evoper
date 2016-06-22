@@ -61,6 +61,8 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
     value = 'ANY',
     tolerance = 'ANY',
     converged = 'ANY',
+    bestS = 'ANY',
+    bestF = 'ANY',
     counter = 'ANY'),
 
   methods = list(
@@ -74,11 +76,19 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
       counter<<- 0
     },
 
+    stats = function() {
+      cbind(total_evals=counter,converged=converged)
+    },
+
     isConverged = function(v) {
       if(!converged) {
         converged<<- (v <= tolerance)
       }
       converged
+    },
+
+    setTolerance = function(v) {
+      tolerance<<- v
     },
 
     Parameter = function(name, min, max) {
@@ -89,19 +99,19 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
       }
     },
 
-    GetParameterRange = function(key) {
+    getParameterRange = function(key) {
       as.numeric(parameters[which(parameters[,"name"] == key),"max"]) - as.numeric(parameters[which(parameters[,"name"] == key),"min"])
     },
 
-    GetParameter = function(key) {
+    getParameter = function(key) {
       parameters[which(parameters[,"name"] == key),]
     },
 
-    GetParameterNames = function() {
+    getParameterNames = function() {
       parameters[,"name"]
     },
 
-    GetParameterValue = function(key, name) {
+    getParameterValue = function(key, name) {
       parameters[which(parameters[,"name"] == key),name]
     },
 
@@ -357,9 +367,9 @@ abm.sda<- function(objective, steps=4) {
   for(s in 1:steps) {
 
     o1<- o$copy()
-    for(k in o$GetParameterNames()) {
-      min0<- as.numeric(o$GetParameterValue(k,"min"))
-      max0<- as.numeric(o$GetParameterValue(k,"max"))
+    for(k in o$getParameterNames()) {
+      min0<- as.numeric(o$getParameterValue(k,"min"))
+      max0<- as.numeric(o$getParameterValue(k,"max"))
 
       #max1<- max0 * .90^s * runif(1, .6, 1)
       #min1<- min0 * .90^s * runif(1, .6, 1)
@@ -581,11 +591,15 @@ initSolution<- function(parameters, N=20) {
 #'
 #'
 #' @export
-pso.lowerBound<- function(particles, factors) {
+lowerBound<- function(particles, factors) {
   k<- rrepast::GetFactorsSize(factors)
-  v<- as.data.frame(sapply(1:k, function(p) {ifelse(particles[,p] > as.numeric(factors[p,"min"]),particles[,p],as.numeric(factors[p,"min"]))}))
-  names(v)<- factors[,"name"]
-  return(v)
+  for(p in 1:nrow(particles)){
+    for(i in 1:k) {
+      lb<- as.numeric(factors[i,"min"])
+      if(particles[p,i] < lb) { particles[p,i]<- lb}
+    }
+  }
+  return(particles)
 }
 
 #' @title upperBound
@@ -599,9 +613,13 @@ pso.lowerBound<- function(particles, factors) {
 #' @export
 upperBound<- function(particles, factors) {
   k<- rrepast::GetFactorsSize(factors)
-  v<- as.data.frame(sapply(1:k, function(p) {ifelse( particles[,p] < as.numeric(factors[p,"max"]),particles[,p],as.numeric(factors[p,"max"]))}))
-  names(v)<- factors[,"name"]
-  return(v)
+  for(p in 1:nrow(particles)){
+    for(i in 1:k) {
+      ub<- as.numeric(factors[i,"max"])
+      if(particles[p,i] > ub) { particles[p,i]<- ub}
+    }
+  }
+  return(particles)
 }
 
 #' @title enforceBounds
@@ -615,6 +633,20 @@ upperBound<- function(particles, factors) {
 #'
 #' @export
 enforceBounds<- function(particles, factors) {
+  k<- rrepast::GetFactorsSize(factors)
+  for(p in 1:nrow(particles)){
+    for(i in 1:k) {
+      lb<- as.numeric(factors[i,"min"]);
+      ub<- as.numeric(factors[i,"max"])
+      if( particles[p,i] < lb || particles[p,i] > ub) {
+        particles[p,i]<- runif(1,lb,ub)
+      }
+    }
+  }
+  return(particles)
+}
+
+enforceBounds1<- function(particles, factors) {
   k<- rrepast::GetFactorsSize(factors)
 
   bounds<- function(i, p, f) {
@@ -690,7 +722,7 @@ enforceBounds<- function(particles, factors) {
 #'
 #' @importFrom stats runif
 #' @export
-abm.saa<- function(objective, iterations= 1000, T0=1000, TMIN=10^-15,  L=16, d=0.1, f.neighborhood=saa.neighborhood1, f.temp=saa.tbyk) {
+abm.saa<- function(objective, iterations= 1000, T0=1000, TMIN=10^-15,  L=16, d=0.16, f.neighborhood=saa.neighborhoodN, f.temp=saa.tbyk) {
   ## Generates an initial solution
   S0<- S<- initSolution(objective$parameters,1)
   f0<- (f<- objective$EvaluateV(S0))
@@ -704,26 +736,17 @@ abm.saa<- function(objective, iterations= 1000, T0=1000, TMIN=10^-15,  L=16, d=0
       f1<- objective$EvaluateV(S1)
       delta<- (C1<- f1[1,"fitness"]) - C
 
-      if(delta < 0 || runif(1,0,1) < exp(-delta/t)) {
-        S<- S1
-        f<- f1
-        C<- C1
-      }
-
-      if(C < C0) {
-        S0<- S
-        f0<- f
-        C0<- C
+      if(delta < 0) {
+        S<- S1; f<- f1; C<- C1
+        if(C < C0) { S0<- S; f0<- f; C0<- C }
+      } else {
+        if(runif(1,0,1) < exp(-delta/t)) { S<- S1; f<- f1; C<- C1 }
       }
     }
-    #print(paste("temperature=",t, "T<TMIN", (t<= TMIN), "k=", k))
     if(t <= TMIN) break;
     if(objective$isConverged(f0[1,"fitness"])) break
   }
 
-  #v<- c()
-  #v<- rbind(v,merge(S0,f0[1,c("pset","fitness")]))
-  #v<- rbind(v,merge(S,f[1,c("pset","fitness")]))
   v<- merge(S0,f0[1,c("pset","fitness")])
   return(v)
 }
@@ -743,9 +766,10 @@ abm.saa<- function(objective, iterations= 1000, T0=1000, TMIN=10^-15,  L=16, d=0
 saa.neighborhood<- function(f, S, d, n) {
   assert(n > 0 && n <= ncol(S),"Invalid number of parameters to be perturbed!")
   newS<- S
+  f.range<- f$getParameterRange
   for(i in sample(1:ncol(S),n)) {
     k<- colnames(S)[i]
-    distance<- f$GetParameterRange(k) * d
+    distance<- f.range(k) * d
     newS[,i]<- newS[,i] + newS[,i] * runif(1,-1,1) * distance
   }
   enforceBounds(as.data.frame(newS), f$parameters)
