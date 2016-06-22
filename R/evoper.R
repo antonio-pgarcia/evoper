@@ -1144,8 +1144,7 @@ f0.rosenbrock2<- function(x1, x2) { (1 - x1)^2 + 100 * (x2 - x1^2)^2 }
 #'
 #' @description Two variable Rosebrock function, where f(c(1,1)) = 0
 #'
-#' @param x1 Parameter 1
-#' @param x2 Parameter 2
+#' @param x Parameter vector
 #'
 #' @export
 f1.rosenbrock2<- function(x) { f0.rosenbrock2(x[1], x[2]) }
