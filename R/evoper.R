@@ -322,9 +322,9 @@ OptionsSAA<- setRefClass("OptionsSAA", contains = "Options",
       callSuper()
       setType("saa")
       setValue("T0", 1)
-      setValue("TMIN", 10^-12)
+      setValue("TMIN", 10^-15)
       setValue("L", 144)
-      setValue("d", 0.16)
+      setValue("d", 0.05)
       setValue("max.accept",32)
       setValue("max.reject",250)
       setNeighborhoodF(saa.neighborhoodN)
@@ -597,6 +597,57 @@ abm.sda<- function(objective, options= NULL) {
   return(v0)
 }
 
+#' @export
+abm.sda1<- function(objective, options= NULL) {
+
+  n.sample<- function(p) {
+    (nrow(p) * 5 + nrow(p))
+  }
+
+  x.sample<- function(n,p) {
+    S<- rrepast::AoE.LatinHypercube(n, p)
+    f<- objective$EvaluateV(S)
+    v<- merge(S,f,by=0)
+    v[with(v,order(fitness)),]
+  }
+
+  dilutions<- 10
+  c0<- n.sample(objective$parameters)
+  c1<- floor((c0-1)/2)
+
+  x1<- c()
+  x0<- NULL
+  print(paste("parameters: ", dilutions, "c0=", c0, "c1=", c1))
+
+  for(i in 1:dilutions) {
+    x<- x.sample(c0,objective$parameters)
+
+    if(is.null(x0)){
+      x0<- x
+    } else{
+      if(x[1,"fitness"]< x0[1,"fitness"]) {
+        x0<- x[1,]
+      }
+    }
+
+    fsum<- sum(x[,"fitness"])
+    #P<- x[ (U0<- runif(1,1,c0)) ,"fitness"]/fsum
+    P<- sum(x[1:c1,"fitness"])/fsum
+
+    print(paste("***** generation best S for dilution: ",dilutions," *****"))
+    print(x[1,])
+
+    for(k in objective$getParameterNames()) {
+      objective$parameters[objective$parameters[,"name"] == k,"min"]<- min(x[1:c1,k])
+      objective$parameters[objective$parameters[,"name"] == k,"max"]<- max(x[1:c1,k])
+    }
+  }
+
+  #print(x1[with(x1,order(fitness)),])
+  #return(x0[1,])
+  return(x0)
+}
+
 #' @title cbuf
 #'
 #' @description Simple implementation of a circular buffer.
@@ -831,7 +882,7 @@ enforceBounds<- function(particles, factors) {
     for(i in 1:k) {
       lb<- as.numeric(factors[i,"min"]);
       ub<- as.numeric(factors[i,"max"])
-      if( particles[p,i] < lb || particles[p,i] > ub) {
+      if( particles[p,i] < lb || particles[p,i] > ub || is.na(particles[p,i])) {
         particles[p,i]<- runif(1,lb,ub)
       }
     }
@@ -966,6 +1017,65 @@ abm.saa<- function(objective, options= NULL) {
   return(v)
 }
 
+#' @export
+abm.saa.1<- function(objective, options= NULL) {
+
+  if(is.null(options)) {
+    options<- OptionsSAA$new()
+  } else {
+    if(options$getType() != "saa") stop(paste("Invalid option of type [", options$getType(),"]"))
+  }
+
+  t<- options$getValue("T0")
+  TMIN<- options$getValue("TMIN")
+  L<- options$getValue("L")
+  d<- options$getValue("d")
+  max.accept<- options$getValue("max.accept")
+  max.reject<- options$getValue("max.reject")
+  f.neighborhood<- options$getNeighborhoodF()
+  f.temp<- options$getTemperatureF()
+
+  max.run<- 150
+  max.accept<- 15
+  max.reject<- 250
+  e.norm<- 1e-2
+
+  c.run<- 0
+  c.accept<- 0
+  rejects<- 0
+
+  ## Generates an initial solution
+  S0<- S<- initSolution(objective$parameters,1)
+  C0<- C<- (f0<- (f<- objective$EvaluateV(S0)))[1,"fitness"]
+
+  while(t > TMIN) {
+    if ( c.accept > max.accept || c.run > max.run ) {
+      t<- f.temp(t, 0)
+      c.accept<- 0
+      c.run<- 0
+    }
+
+    S<- f.neighborhood(objective,S0,d)
+    f<- objective$EvaluateV(S)
+    delta<- (C<- f[1,"fitness"]) - C0
+
+    if(-delta < e.norm) {
+      f0<- f; C0<- C; S0<- S
+      c.accept<- c.accept + 1
+    } else {
+      if(exp(-delta/t) > runif(1,0,1)) {
+        f0<- f; C0<- C; S0<- S
+        c.accept<- c.accept + 1
+      }
+    }
+
+    if(rejects > options$getValue("max.reject")) { break }
+  }
+
+  v<- merge(S0,f0[1,c("pset","fitness")])
+  return(v)
+}
+
 #' @title saa.neighborhood
 #'
 #' @description Generates neighbor solutions for simulated annealing
@@ -982,10 +1092,13 @@ saa.neighborhood<- function(f, S, d, n) {
   assert(n > 0 && n <= ncol(S),"Invalid number of parameters to be perturbed!")
   newS<- S
   f.range<- f$getParameterRange
+
   for(i in sample(1:ncol(S),n)) {
     k<- colnames(S)[i]
     distance<- f.range(k) * d
-    newS[,i]<- newS[,i] + newS[,i] * runif(1,-1,1) * distance
+    #newS[,i]<- newS[,i] + runif(1,as.numeric(f$getParameterValue(k,"min")),as.numeric(f$getParameterValue(k,"max"))) * distance
+    #newS[,i]<- newS[,i] + newS[,i] * runif(1,-1,1) * distance
+    newS[,i]<- newS[,i] + newS[,i] * rnorm(1) * distance
     #newS[,i]<- newS[,i] + .01 * f.range(k) * runif(1,0,1)
   }
   enforceBounds(as.data.frame(newS), f$parameters)
@@ -1093,12 +1206,12 @@ saa.bolt<- function(t0, k) {
 #'
 #' @export
 saa.tcte<- function(t0, k) {
-  .75 * t0
+  .95 * t0
 }
 
 
 ##
-## ----- Simulated Annealing Algorithm
+## ----- Ant colony optimization
 ##
 abm.aco<- function() {
   ##Still under test
@@ -1132,7 +1245,7 @@ f1.test<- function(x) { f0.test(x[1],x[2],x[3],x[4]) }
 
 #' @title f0.rosenbrock2
 #'
-#' @description Two variable Rosebrock function, where f(1,1) = 0
+#' @description Two variable Rosenbrock function, where f(1,1) = 0
 #'
 #' @param x1 Parameter 1
 #' @param x2 Parameter 2
@@ -1142,7 +1255,7 @@ f0.rosenbrock2<- function(x1, x2) { (1 - x1)^2 + 100 * (x2 - x1^2)^2 }
 
 #' @title f1.rosenbrock2
 #'
-#' @description Two variable Rosebrock function, where f(c(1,1)) = 0
+#' @description Two variable Rosenbrock function, where f(c(1,1)) = 0
 #'
 #' @param x Parameter vector
 #'
@@ -1150,4 +1263,37 @@ f0.rosenbrock2<- function(x1, x2) { (1 - x1)^2 + 100 * (x2 - x1^2)^2 }
 f1.rosenbrock2<- function(x) { f0.rosenbrock2(x[1], x[2]) }
 
 
+#' @title slopes
+#'
+#' @description Calcule all slopes for the discrete x,y series
+#'
+#' @param x The x vector
+#' @param y The y vector
+#'
+#' @return A vector with all slopes
+#'
+#' @export
+slopes<- function(x, y) {
+  sapply(1:length(x),function(i, x , y) { slope(x,y,i) }, x=x, y=y)
+}
 
+#' @title slope
+#'
+#' @description Simple function for calculate the slope on the ith element
+#' position
+#'
+#' @param x The x vector
+#' @param y The y vector
+#' @param i The position
+#'
+#' @return The slope
+#'
+#' @export
+slope<- function(x, y,i) {
+  if(i > 1 && i < length(y)) {
+    v<- 0.5 * ((y[i]-y[i-1])/(x[i]-x[i-1]) + (y[i+1] - y[i])/(x[i+1]-x[i]))
+  } else {
+    v<- ifelse(i == 1,(y[i+1] - y[i])/(x[i+1]-x[i]),(y[i]-y[i-1])/(x[i]-x[i-1]))
+  }
+  v
+}
