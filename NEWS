@@ -7,13 +7,20 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
+## EvoPER [0.3.0] - 2016-07-10
+### Added
+
+### Changed
+
+### Fixed
+
 ## EvoPER [0.2.0] - 2016-06-22
 ### Added
 - extremize the entry point for optimization functions
-- Options S4 Parent class for options
-- OptionsPSO S4 class for PSO Options
-- OptionsSAA S4 class for SAA Options
-- OptionsSDA S4 class for SDA Options
+- Options Parent class for options
+- OptionsPSO class for PSO Options
+- OptionsSAA class for SAA Options
+- OptionsSDA class for SDA Options
 - abm.sda Simulted dilution
 - saa.neighborhood Neighborhood for SAA
 - saa.neighborhood1 Neighborhood for SAA

@@ -1098,7 +1098,7 @@ saa.neighborhood<- function(f, S, d, n) {
     distance<- f.range(k) * d
     #newS[,i]<- newS[,i] + runif(1,as.numeric(f$getParameterValue(k,"min")),as.numeric(f$getParameterValue(k,"max"))) * distance
     #newS[,i]<- newS[,i] + newS[,i] * runif(1,-1,1) * distance
-    newS[,i]<- newS[,i] + newS[,i] * rnorm(1) * distance
+    newS[,i]<- newS[,i] + 0.01 * f.range(k) * rnorm(1)
     #newS[,i]<- newS[,i] + .01 * f.range(k) * runif(1,0,1)
   }
   enforceBounds(as.data.frame(newS), f$parameters)

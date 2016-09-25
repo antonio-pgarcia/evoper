@@ -15,5 +15,9 @@ The EvoPER, Evolutionary Parameter Estimation for 'Repast Simphony'
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
 
+## Statistics 
+
+[![](http://cranlogs.r-pkg.org/badges/evoper)](http://cran.rstudio.com/web/packages/evoper/index.html)
+
 ## Acknowledgments
 
