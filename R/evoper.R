@@ -134,6 +134,7 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
       counter<<- counter + nrow(swarm)
     },
 
+    ## Evaluate population and return results
     EvaluateV = function(swarm) {
       Evaluate(swarm)
       Value()
@@ -341,6 +342,25 @@ OptionsSAA<- setRefClass("OptionsSAA", contains = "Options",
   )
 )
 
+#' @title OptionsACOR
+#'
+#' @description Options for ACOR method
+#'
+#' @importFrom methods new
+#' @export OptionsACOR
+#' @exportClass OptionsACOR
+OptionsACOR<- setRefClass("OptionsACOR", contains = "Options",
+  methods = list(
+    initialize = function() {
+      callSuper()
+      setType("acor")
+      setValue("k", 16)    ## The archive size
+      setValue("q", 0.25)  ## Locality of the search process
+      setValue("Xi", 0.8)  ## Equivalent to evaporation rate, higher Xi reduce convergence speed
+    }
+  )
+)
+
 #' @title OptionsSDA
 #'
 #' @description Options for Serial Dilutions method
@@ -425,7 +445,8 @@ extremize<- function(type, objective, options = NULL) {
       optimization.fun<- abm.sda
     },
 
-    aco={
+    acor={
+      optimization.fun<- abm.acor
     },
 
     {
@@ -461,6 +482,7 @@ extremize<- function(type, objective, options = NULL) {
 #' }
 #'
 #' @references
+#'
 #' [1] Kennedy, J., & Eberhart, R. (1995). Particle swarm optimization.
 #' In Proceedings of ICNN 95 - International Conference on Neural
 #' Networks (Vol. 4, pp. 1942-1948). IEEE.
@@ -1213,10 +1235,113 @@ saa.tcte<- function(t0, k) {
 ##
 ## ----- Ant colony optimization
 ##
-abm.aco<- function() {
+
+#' @title Ant colony optimization for continuous domains
+#'
+#' @param objective An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
+#' @param options An apropiate instance from a sublclass of \link{Options} class
+#'
+#' @references
+#'
+#' [1] Socha, K., & Dorigo, M. (2008). Ant colony optimization for continuous domains.
+#' European Journal of Operational Research, 185(3), 1155–1173.
+#' http://doi.org/10.1016/j.ejor.2006.06.046#'
+#'
+#' @export
+abm.acor<- function(objective, options= NULL) {
   ##Still under test
+  if(is.null(options)) {
+    options<- OptionsACOR$new()
+  } else {
+    if(options$getType() != "acor") stop(paste("Invalid option of type [", options$getType(),"]"))
+  }
+
+  ## --- Configure algorithm options
+  iterations<- options$getValue("iterations")
+  k<- options$getValue("k")
+  q<- options$getValue("q")
+  xi<- options$getValue("Xi")
+
+  ## --- Initialize the solution
+  S<- initSolution(objective$parameters,k)
+  C<- objective$EvaluateV(S)
+  W<- acor.weigth(q,k,1:k)
+
+  ## --- Build the solution 'T' archive
+  T<- cbind(S,C,W)
+
+  ## --- Sort solution archive 'T' by fitness value
+  T<- T[with(T,order(fitness)),]
+
+
+  for(index in 1:iterations) {
+  }
+  return(T)
 }
 
+#' @title Weight calculation for ant colony optimization
+#'
+#' @param q The Algorithm parameter. When small best-ranked solution is preferred
+#' @param k The Archive size
+#' @param l The lth element of algorithm solution archive T
+#'
+#' @return A scalar or a vector with calculated weigth.
+#'
+#' @references
+#'
+#' [1] Socha, K., & Dorigo, M. (2008). Ant colony optimization for continuous domains.
+#' European Journal of Operational Research, 185(3), 1155–1173.
+#' http://doi.org/10.1016/j.ejor.2006.06.046#'
+#'
+#' @export
+acor.weigth<- function(q, k, l) {
+  ( 1 / (q * k * sqrt(2 * pi)) ) * exp(1) ^ - ( ( (l - 1) ^ 2 ) / ( 2 * q ^ 2 + k ^ 2) )
+}
+
+#' @title Gaussian kernel choosing probability
+#'
+#' @description Calculate the probability of choosing the lth Gaussian function
+#'
+#' @param W The vector of weights
+#' @param l The lth element of algorithm solution archive T
+#'
+#' @return The probability p
+#'
+#' @references
+#'
+#' [1] Socha, K., & Dorigo, M. (2008). Ant colony optimization for continuous domains.
+#' European Journal of Operational Research, 185(3), 1155–1173.
+#' http://doi.org/10.1016/j.ejor.2006.06.046#'
+#'
+#' @export
+acor.choosing.p<- function(W, l) {
+  W[l]/sum(W)
+}
+
+#' @title Sigma calculation for ACOr
+#'
+#' @description Calculate the value of sigma
+#'
+#' @param Xi The algorithm parameter
+#' @param l The lth element of algorithm solution archive T
+#'
+#' @return The probability p
+#'
+#' @references
+#'
+#' [1] Socha, K., & Dorigo, M. (2008). Ant colony optimization for continuous domains.
+#' European Journal of Operational Research, 185(3), 1155–1173.
+#' http://doi.org/10.1016/j.ejor.2006.06.046#'
+#'
+#' @export
+acor.sigma()
+
+##
+# f<- PlainFunction$new(f0.rosenbrock2)
+# f$Parameter(name="x1",min=-100,max=100)
+# f$Parameter(name="x2",min=-100,max=100)
+# extremize("acor", f)
+##
 
 ##
 ## ----- Test functions
@@ -1289,7 +1414,7 @@ slopes<- function(x, y) {
 #' @return The slope
 #'
 #' @export
-slope<- function(x, y,i) {
+slope<- function(x, y, i) {
   if(i > 1 && i < length(y)) {
     v<- 0.5 * ((y[i]-y[i-1])/(x[i]-x[i-1]) + (y[i+1] - y[i])/(x[i+1]-x[i]))
   } else {
@@ -1297,3 +1422,4 @@ slope<- function(x, y,i) {
   }
   v
 }
+
