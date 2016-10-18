@@ -8,6 +8,7 @@ Authors@R: c(
     person("Alfonso", " Rodriguez-Paton", email = "arpaton@fi.upm.es", role = c("aut","ths")))
 Maintainer: Antonio Prestes Garcia <antonio.pgarcia@alumnos.upm.es>
 URL: https://github.com/antonio-pgarcia/evoper
+BugReports: https://github.com/antonio-pgarcia/evoper/issues
 Description: The EvoPER, Evolutionary Parameter Estimation for 'Repast Simphony'
     Agent-Based framework, provides optimization driven parameter estimation methods
     based on evolutionary computation techniques which could be more efficient and
