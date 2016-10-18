@@ -230,6 +230,7 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
 ##
 ## ----- Options class
 ##
+
 #' @title Options
 #'
 #' @description The base class for the options for the optimization methods.
@@ -354,9 +355,10 @@ OptionsACOR<- setRefClass("OptionsACOR", contains = "Options",
     initialize = function() {
       callSuper()
       setType("acor")
+      setValue("ants", 32) ## The number of simulated ants
       setValue("k", 16)    ## The archive size
-      setValue("q", 0.25)  ## Locality of the search process
-      setValue("Xi", 0.8)  ## Equivalent to evaporation rate, higher Xi reduce convergence speed
+      setValue("q", 0.30)  ## Locality of the search process
+      setValue("Xi", 0.9)  ## Equivalent to evaporation rate, higher Xi reduce convergence speed
     }
   )
 )
@@ -1231,10 +1233,11 @@ saa.tcte<- function(t0, k) {
   .95 * t0
 }
 
-
+## ##################################################################
 ##
-## ----- Ant colony optimization
+## --------------- Ant colony optimization functions ---------------
 ##
+## ##################################################################
 
 #' @title Ant colony optimization for continuous domains
 #'
@@ -1249,34 +1252,72 @@ saa.tcte<- function(t0, k) {
 #'
 #' @export
 abm.acor<- function(objective, options= NULL) {
-  ##Still under test
   if(is.null(options)) {
     options<- OptionsACOR$new()
   } else {
     if(options$getType() != "acor") stop(paste("Invalid option of type [", options$getType(),"]"))
   }
 
-  ## --- Configure algorithm options
+  ## --- Configure algorithm parameters
   iterations<- options$getValue("iterations")
+  ants<- options$getValue("ants")
   k<- options$getValue("k")
   q<- options$getValue("q")
-  xi<- options$getValue("Xi")
+  Xi<- options$getValue("Xi")
 
-  ## --- Initialize the solution
-  S<- initSolution(objective$parameters,k)
-  C<- objective$EvaluateV(S)
+  ## --- Create the weigth vector
   W<- acor.weigth(q,k,1:k)
 
-  ## --- Build the solution 'T' archive
-  T<- cbind(S,C,W)
+  ## --- Initialize the solution
+  S<- initSolution(objective$parameters,ants)
 
-  ## --- Sort solution archive 'T' by fitness value
-  T<- T[with(T,order(fitness)),]
+  C<- objective$EvaluateV(S)
+  T<- acor.archive(S, C, W, k)
 
 
   for(index in 1:iterations) {
+    s.s<- acor.S(T)
+    s.sd<- acor.sigma(Xi, k, T)
+
+    ## --- AntBasedSolutionConstruction
+    S<- acor.updateants(S, ants, W, s.s, s.sd)
+    C<- objective$EvaluateV(S)
+
+    ## --- PheromoneUpdate
+    T<- acor.archive(S, C, W, k)
   }
+
   return(T)
+}
+
+#' @title acor.updateants
+#'
+#' @description Update the solution using the gaussian kernel
+#'
+#' @param S The current solution ants
+#' @param N The numnber of required ants in solution
+#' @param W The weight vector
+#' @param t.mu The 'mean' from solution archive
+#' @param t.sigma The value of sigma from solution archive
+#'
+#' @return The new solution ants
+#'
+#' @references
+#'
+#' [1] Socha, K., & Dorigo, M. (2008). Ant colony optimization for continuous domains.
+#' European Journal of Operational Research, 185(3), 1155–1173.
+#' http://doi.org/10.1016/j.ejor.2006.06.046#'
+#'
+#' @export
+acor.updateants<- function(S, N, W, t.mu, t.sigma) {
+  t.mu<- as.matrix(t.mu)
+  t.sigma<- as.matrix(t.sigma)
+  n<- length(S[1,])
+  for(i in 1:N) {
+    l<- acor.lthgaussian(W)
+    S[i,]<- rnorm(n, t.mu[l,], t.sigma[l,])
+  }
+  S
 }
 
 #' @title Weight calculation for ant colony optimization
@@ -1305,7 +1346,7 @@ acor.weigth<- function(q, k, l) {
 #' @param W The vector of weights
 #' @param l The lth element of algorithm solution archive T
 #'
-#' @return The probability p
+#' @return The vector of probabilities 'p'
 #'
 #' @references
 #'
@@ -1314,8 +1355,32 @@ acor.weigth<- function(q, k, l) {
 #' http://doi.org/10.1016/j.ejor.2006.06.046#'
 #'
 #' @export
-acor.choosing.p<- function(W, l) {
+acor.probabilities<- function(W, l= NULL) {
+  if(is.null(l)) {
+    l<- 1:length(W)
+  }
   W[l]/sum(W)
+}
+
+#' @title Select the lth gaussian function
+#'
+#' @description Given a weight vector calculate the probabilities of selecting
+#' the lth gaussian function and return the index of lht gaussian selected with
+#' probability p
+#'
+#' @param W The vector of weights
+#'
+#' @return The index of lht gaussian function
+#'
+#' @references
+#'
+#' [1] Socha, K., & Dorigo, M. (2008). Ant colony optimization for continuous domains.
+#' European Journal of Operational Research, 185(3), 1155–1173.
+#' http://doi.org/10.1016/j.ejor.2006.06.046#'
+#'
+#' @export
+acor.lthgaussian<- function(W) {
+  which(runif(1) < cumsum(acor.probabilities(W)))[1]
 }
 
 #' @title Sigma calculation for ACOr
@@ -1323,9 +1388,10 @@ acor.choosing.p<- function(W, l) {
 #' @description Calculate the value of sigma
 #'
 #' @param Xi The algorithm parameter
-#' @param l The lth element of algorithm solution archive T
+#' @param k The solution archive size
+#' @param T The solution archive
 #'
-#' @return The probability p
+#' @return The sigma value
 #'
 #' @references
 #'
@@ -1334,18 +1400,127 @@ acor.choosing.p<- function(W, l) {
 #' http://doi.org/10.1016/j.ejor.2006.06.046#'
 #'
 #' @export
-acor.sigma()
+acor.sigma<- function(Xi, k, T) {
+  #assert((length(i) <= acor.N(T) && length(l) <= k),"Invalid i or l dimensions")
+  s<- as.matrix(acor.S(T))
+  ssigma<- matrix(nrow = k, ncol = acor.N(T))
+  for(l in 1:k) {
+    summatory<- 0
+    for(e in 1:k) {
+      summatory<- summatory + abs(s[e,] - s[l,]) / (k - 1)
+    }
+    ssigma[l,]<- Xi * summatory
+  }
+  ssigma
+}
+
+#' @title acor.archive
+#'
+#' @description This function is used for creating and maintaining the ACOr archive 'T'.
+#' The function keeps the track of 'k' solotion in the archive.
+#'
+#' @param s The solution 'ants'
+#' @param f The evaluation of solution
+#' @param w The weight vector
+#' @param k The archive size
+#' @param T The current archive
+#'
+#' @return The solution archive
+#'
+#' @references
+#'
+#' [1] Socha, K., & Dorigo, M. (2008). Ant colony optimization for continuous domains.
+#' European Journal of Operational Research, 185(3), 1155–1173.
+#' http://doi.org/10.1016/j.ejor.2006.06.046#'
+#'
+#' @export
+acor.archive<- function(s, f, w, k, T= NULL) {
+  ## Drop "pset" column from f and leave only the fitness value
+  f[,c("pset")]<- list(NULL)
+
+  if(is.null(T)) {
+    archive<- cbind(s,f)
+  } else {
+    t.s<- acor.S(T)
+    t.f<- acor.F(T)
+    archive<- cbind(t.s,t.f)
+    archive<- rbind(archive,cbind(s,f))
+  }
+  T<- (archive[with(archive,order(fitness)),])[1:k,]
+  cbind(T,w)
+}
+
+#' @title acor.S
+#'
+#' @description Helper function for extracting solution 'S' from archive 'T'
+#'
+#' @param T The solution archive
+#'
+#' @return The solution matrix
+#'
+#' @export
+acor.S<- function(T) {
+  T[,c("fitness","w")]<- list(NULL)
+  T
+}
+
+#' @title acor.F
+#'
+#' @description Helper function for extracting the 'F' function evaluations
+#' from archive ACOr 'T'
+#'
+#' @param T The solution archive
+#'
+#' @return The F matrix
+#'
+#' @export
+acor.F<- function(T) {
+  T$fitness
+}
+
+#' @title acor.W
+#'
+#' @description Helper function for extracting the 'W' function evaluations
+#' from archive ACOr 'T'
+#'
+#' @param T The solution archive
+#'
+#' @return The weight vector
+#'
+#' @export
+acor.W<- function(T) {
+  T$w
+}
+
+#' @title acor.N
+#'
+#' @description Helper function for getting the size of solution
+#'
+#' @param T The solution archive
+#'
+#' @return The size 'n' of a solution 's'
+#'
+#' @export
+acor.N<- function(T) {
+  length(T[1,])-2
+}
+
+
+## ##################################################################
+##
+## ----------------- Functions for testing methods -----------------
+##
+## ##################################################################
+
 
 ##
+# rm(list=ls())
 # f<- PlainFunction$new(f0.rosenbrock2)
 # f$Parameter(name="x1",min=-100,max=100)
 # f$Parameter(name="x2",min=-100,max=100)
 # extremize("acor", f)
 ##
 
-##
-## ----- Test functions
-##
 
 #' @title f0.test
 #'
