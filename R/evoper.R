@@ -323,8 +323,8 @@ OptionsSAA<- setRefClass("OptionsSAA", contains = "Options",
     initialize = function() {
       callSuper()
       setType("saa")
-      setValue("T0", 1)
-      setValue("TMIN", 10^-15)
+      setValue("t0", 1)
+      setValue("t.min", 10^-15)
       setValue("L", 144)
       setValue("d", 0.05)
       setValue("max.accept",32)
@@ -355,10 +355,10 @@ OptionsACOR<- setRefClass("OptionsACOR", contains = "Options",
     initialize = function() {
       callSuper()
       setType("acor")
-      setValue("ants", 32) ## The number of simulated ants
-      setValue("k", 16)    ## The archive size
-      setValue("q", 0.30)  ## Locality of the search process
-      setValue("Xi", 0.9)  ## Equivalent to evaporation rate, higher Xi reduce convergence speed
+      setValue("n.ants", 32)  ## The number of simulated ants
+      setValue("k", 16)       ## The archive size
+      setValue("q", 0.2)     ## Locality of the search process
+      setValue("Xi", 0.5)     ## Equivalent to evaporation rate, higher Xi reduce convergence speed
     }
   )
 )
@@ -410,9 +410,13 @@ OptionsSDA<- setRefClass("OptionsSDA", contains = "Options",
   )
 )
 
+
+## ##################################################################
 ##
-## ----- Entry point function
+## --- Entry point function -
 ##
+## ##################################################################
+
 
 #' @title extremize
 #'
@@ -459,9 +463,13 @@ extremize<- function(type, objective, options = NULL) {
   optimization.fun(objective, options)
 }
 
+
+## ##################################################################
 ##
-## ----- Particle Swarm Optimization functions
+## --- Particle Swarm Optimization functions -
 ##
+## ##################################################################
+
 
 
 #' @title abm.pso
@@ -546,146 +554,6 @@ abm.pso<- function(objective, options = NULL) {
     }
  }
  return(pso.best(lbest, Pg))
-}
-
-#' @title Simulated Dilution Approximation
-#'
-#' @description This function tries to provide a better approximation to the
-#' best solution when no information is available on the correct range of
-#' input parameters for the objective function. Basically the function search
-#' for the best cost n replications and adjust the range based on that value
-#' of best particles and a 10^-1 of initially provided range.
-#'
-#' @param objective An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
-#' @param options An apropiate instance from a sublclass of \link{Options} class
-#'
-#' @export
-abm.sda<- function(objective, options= NULL) {
-
-  if(is.null(options)) {
-    options<- OptionsSDA$new()
-  } else {
-    if(options$getType() != "sda") stop(paste("Invalid option of type [", options$getType(),"]"))
-  }
-
-  iterations<- options$getValue("iterations")
-  steps<- options$getValue("dilutions")
-
-  o<- objective$copy()
-
-  f.optimization<- options$getOptF()
-
-  v<- v0<- f.optimization(o, options$getOptions())
-  f0<- v0$fitness
-
-  for(s in 1:steps) {
-
-    o1<- o$copy()
-    for(k in o$getParameterNames()) {
-      min0<- as.numeric(o$getParameterValue(k,"min"))
-      max0<- as.numeric(o$getParameterValue(k,"max"))
-
-      #max1<- max0 * .90^s * runif(1, .6, 1)
-      #min1<- min0 * .90^s * runif(1, .6, 1)
-      #print(paste("k=", k, "v",v[1,k]))
-
-      #U<- runif(1, .9, 1)
-      U<- 1
-      rmax1<-  (max0 * .90^s * U)
-      rmin1<-  (min0 * .90^s * U)
-      max1<- v[1,k] + (rmax1 - rmin1)/exp(1)
-      min1<- v[1,k] - (rmax1 - rmin1)/exp(1)
-
-      o1$parameters[ o1$parameters[,"name"] == k,"min"]<- ifelse(min1 > min0, min1, (runif(1) * min0))
-      o1$parameters[ o1$parameters[,"name"] == k,"max"]<- ifelse(max1 < max0, max1, (runif(1) * max0))
-    }
-
-    print("************************************************************")
-    print(o1$parameters)
-    print("------------------------------------------------------------")
-    print(paste("[",s,"]","f0=",f0,"f1=",v$fitness))
-    print("************************************************************")
-
-    #v<- abm.pso(o1, iterations=13)
-    #v<- extremize("saa", o1, iterations=13)
-    v<- f.optimization(o1, options$getOptions())
-
-    if(v$fitness < f0) {
-      f0<- v$fitness
-      v0<- v
-      o<- o1
-    }
-  }
-
-  eval.parent(substitute(objective<-o))
-  return(v0)
-}
-
-#' @export
-abm.sda1<- function(objective, options= NULL) {
-
-  n.sample<- function(p) {
-    (nrow(p) * 5 + nrow(p))
-  }
-
-  x.sample<- function(n,p) {
-    S<- rrepast::AoE.LatinHypercube(n, p)
-    f<- objective$EvaluateV(S)
-    v<- merge(S,f,by=0)
-    v[with(v,order(fitness)),]
-  }
-
-  dilutions<- 10
-  c0<- n.sample(objective$parameters)
-  c1<- floor((c0-1)/2)
-
-  x1<- c()
-  x0<- NULL
-  print(paste("parameters: ", dilutions, "c0=", c0, "c1=", c1))
-
-  for(i in 1:dilutions) {
-    x<- x.sample(c0,objective$parameters)
-
-    if(is.null(x0)){
-      x0<- x
-    } else{
-      if(x[1,"fitness"]< x0[1,"fitness"]) {
-        x0<- x[1,]
-      }
-    }
-
-    fsum<- sum(x[,"fitness"])
-    #P<- x[ (U0<- runif(1,1,c0)) ,"fitness"]/fsum
-    P<- sum(x[1:c1,"fitness"])/fsum
-
-    print(paste("***** generation best S for dilution: ",dilutions," *****"))
-    print(x[1,])
-
-    for(k in objective$getParameterNames()) {
-      objective$parameters[objective$parameters[,"name"] == k,"min"]<- min(x[1:c1,k])
-      objective$parameters[objective$parameters[,"name"] == k,"max"]<- max(x[1:c1,k])
-    }
-  }
-
-  #print(x1[with(x1,order(fitness)),])
-  #return(x0[1,])
-  return(x0)
-}
-
-#' @title cbuf
-#'
-#' @description Simple implementation of a circular buffer.
-#'
-#' @param b The variable holding the current buffer content
-#' @param v The new valued to be added to b
-#' @param e The length of circular buffer
-#'
-#' @return The buffer b plus the element v minus the least recently added element
-#'
-#' @importFrom utils head
-#' @export
-cbuf<- function(b,v,e) {
-  c(head(v,1),head(b,e))
 }
 
 #' @title pso.best
@@ -832,117 +700,12 @@ pso.lbest<- function(i,pbest, topology) {
   return(pbest[p,])
 }
 
-#' @title initSolution
-#'
-#' @description Creates the initial Solution population
-#' taking into account the lower an upper bounds of
-#' provided experiment factors.
-#'
-#' @param parameters The Objective Function parameter list
-#' @param N The size of Solution population
-#'
-#' @return A random set of solutions
-#'
-#' @importFrom rrepast AoE.RandomSampling
-#' @export
-initSolution<- function(parameters, N=20) {
-  rrepast::AoE.RandomSampling(N,parameters)
-}
 
-#' @title lowerBound
-#'
-#' @description Checks if parameters is greater than the lower bounds
-#' @param particles The particle set
-#' @param factors the defined range for objective function parameters
-#'
-#' @return The particle greater than or equal to lower limit
-#'
-#'
-#' @export
-lowerBound<- function(particles, factors) {
-  k<- rrepast::GetFactorsSize(factors)
-  for(p in 1:nrow(particles)){
-    for(i in 1:k) {
-      lb<- as.numeric(factors[i,"min"])
-      if(particles[p,i] < lb) { particles[p,i]<- lb}
-    }
-  }
-  return(particles)
-}
-
-#' @title upperBound
-#'
-#' @description Checks if parameters is below the upper bounds
-#' @param particles The particle set
-#' @param factors the defined range for objective function parameters
-#'
-#' @return The particle inside the valid upper bound
-#'
-#' @export
-upperBound<- function(particles, factors) {
-  k<- rrepast::GetFactorsSize(factors)
-  for(p in 1:nrow(particles)){
-    for(i in 1:k) {
-      ub<- as.numeric(factors[i,"max"])
-      if(particles[p,i] > ub) { particles[p,i]<- ub}
-    }
-  }
-  return(particles)
-}
-
-#' @title enforceBounds
-#'
-#' @description Checks if parameters fall within upper an lower bounds
-#'
-#' @param particles The particle set
-#' @param factors the defined range for objective function parameters
-#'
-#' @return The particle inside the valid limits
-#'
-#' @export
-enforceBounds<- function(particles, factors) {
-  k<- rrepast::GetFactorsSize(factors)
-  for(p in 1:nrow(particles)){
-    for(i in 1:k) {
-      lb<- as.numeric(factors[i,"min"]);
-      ub<- as.numeric(factors[i,"max"])
-      if( particles[p,i] < lb || particles[p,i] > ub || is.na(particles[p,i])) {
-        particles[p,i]<- runif(1,lb,ub)
-      }
-    }
-  }
-  return(particles)
-}
-
-enforceBounds1<- function(particles, factors) {
-  k<- rrepast::GetFactorsSize(factors)
-
-  bounds<- function(i, p, f) {
-    if(nrow(p) > 1) {
-      x<- p[,i]
-    } else {
-      x<- p[i]
-    }
-
-    lb<- as.numeric(f[i,"min"]);
-    ub<- as.numeric(f[i,"max"]);
-
-    for(j in 1:length(x)) {
-      if( x[j] < lb || x[j] > ub) {
-        x[j]<- runif(1,lb,ub)
-      }
-    }
-    return(x)
-  }
-  v<- as.data.frame(sapply(1:k,bounds,p=particles,f=factors))
-  names(v)<- factors[,"name"]
-  return(v)
-}
-
-
+## ##################################################################
 ##
-## ----- Simulated Annealing Algorithm
+## --- Simulated Annealing Algorithm functions -
 ##
+## ##################################################################
 
 
 #' @title abm.saa
@@ -983,7 +746,6 @@ enforceBounds1<- function(particles, factors) {
 #'
 #' @importFrom stats runif
 #' @export
-#abm.saa<- function(objective, iterations= 1000, T0=1, TMIN=10^-12,  L=144, d=0.16, f.neighborhood=saa.neighborhoodN, f.temp=saa.bolt) {
 abm.saa<- function(objective, options= NULL) {
 
   if(is.null(options)) {
@@ -993,8 +755,8 @@ abm.saa<- function(objective, options= NULL) {
   }
 
   iterations<- options$getValue("iterations")
-  T0<- options$getValue("T0")
-  TMIN<- options$getValue("TMIN")
+  T0<- options$getValue("t0")
+  TMIN<- options$getValue("t.min")
   L<- options$getValue("L")
   d<- options$getValue("d")
   max.accept<- options$getValue("max.accept")
@@ -1235,7 +997,7 @@ saa.tcte<- function(t0, k) {
 
 ## ##################################################################
 ##
-## --------------- Ant colony optimization functions ---------------
+## --- Ant colony optimization functions -
 ##
 ## ##################################################################
 
@@ -1260,7 +1022,7 @@ abm.acor<- function(objective, options= NULL) {
 
   ## --- Configure algorithm parameters
   iterations<- options$getValue("iterations")
-  ants<- options$getValue("ants")
+  n.ants<- options$getValue("n.ants")
   k<- options$getValue("k")
   q<- options$getValue("q")
   Xi<- options$getValue("Xi")
@@ -1269,22 +1031,24 @@ abm.acor<- function(objective, options= NULL) {
   W<- acor.weigth(q,k,1:k)
 
   ## --- Initialize the solution
-  S<- initSolution(objective$parameters,ants)
+  S<- initSolution(objective$parameters,n.ants)
 
   C<- objective$EvaluateV(S)
   T<- acor.archive(S, C, W, k)
-
 
   for(index in 1:iterations) {
     s.s<- acor.S(T)
     s.sd<- acor.sigma(Xi, k, T)
 
     ## --- AntBasedSolutionConstruction
-    S<- acor.updateants(S, ants, W, s.s, s.sd)
+    S<- acor.updateants(S, n.ants, W, s.s, s.sd)
     C<- objective$EvaluateV(S)
 
     ## --- PheromoneUpdate
     T<- acor.archive(S, C, W, k)
+
+    ## Check for algorithm convergence
+    if(objective$isConverged(T[1, "fitness"])) break
   }
 
   return(T)
@@ -1508,6 +1272,226 @@ acor.N<- function(T) {
 
 ## ##################################################################
 ##
+## --- Simulated Dilution Approximation -
+##
+## ##################################################################
+
+
+#' @title Simulated Dilution Approximation
+#'
+#' @description This function tries to provide a better approximation to the
+#' best solution when no information is available on the correct range of
+#' input parameters for the objective function. Basically the function search
+#' for the best cost n replications and adjust the range based on that value
+#' of best particles and a 10^-1 of initially provided range.
+#'
+#' @param objective An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
+#' @param options An apropiate instance from a sublclass of \link{Options} class
+#'
+#' @export
+abm.sda<- function(objective, options= NULL) {
+
+  if(is.null(options)) {
+    options<- OptionsSDA$new()
+  } else {
+    if(options$getType() != "sda") stop(paste("Invalid option of type [", options$getType(),"]"))
+  }
+
+  iterations<- options$getValue("iterations")
+  steps<- options$getValue("dilutions")
+
+  o<- objective$copy()
+
+  f.optimization<- options$getOptF()
+
+  v<- v0<- f.optimization(o, options$getOptions())
+  f0<- v0$fitness
+
+  for(s in 1:steps) {
+
+    o1<- o$copy()
+    for(k in o$getParameterNames()) {
+      min0<- as.numeric(o$getParameterValue(k,"min"))
+      max0<- as.numeric(o$getParameterValue(k,"max"))
+
+      #max1<- max0 * .90^s * runif(1, .6, 1)
+      #min1<- min0 * .90^s * runif(1, .6, 1)
+      #print(paste("k=", k, "v",v[1,k]))
+
+      #U<- runif(1, .9, 1)
+      U<- 1
+      rmax1<-  (max0 * .90^s * U)
+      rmin1<-  (min0 * .90^s * U)
+      max1<- v[1,k] + (rmax1 - rmin1)/exp(1)
+      min1<- v[1,k] - (rmax1 - rmin1)/exp(1)
+
+      o1$parameters[ o1$parameters[,"name"] == k,"min"]<- ifelse(min1 > min0, min1, (runif(1) * min0))
+      o1$parameters[ o1$parameters[,"name"] == k,"max"]<- ifelse(max1 < max0, max1, (runif(1) * max0))
+    }
+
+    print("************************************************************")
+    print(o1$parameters)
+    print("------------------------------------------------------------")
+    print(paste("[",s,"]","f0=",f0,"f1=",v$fitness))
+    print("************************************************************")
+
+    #v<- abm.pso(o1, iterations=13)
+    #v<- extremize("saa", o1, iterations=13)
+    v<- f.optimization(o1, options$getOptions())
+
+    if(v$fitness < f0) {
+      f0<- v$fitness
+      v0<- v
+      o<- o1
+    }
+  }
+
+  eval.parent(substitute(objective<-o))
+  return(v0)
+}
+
+## ##################################################################
+##
+## ---------------------- General functions -------------------------
+##
+## ##################################################################
+
+
+#' @title initSolution
+#'
+#' @description Creates the initial Solution population
+#' taking into account the lower an upper bounds of
+#' provided experiment factors.
+#'
+#' @param parameters The Objective Function parameter list
+#' @param N The size of Solution population
+#'
+#' @return A random set of solutions
+#'
+#' @importFrom rrepast AoE.RandomSampling
+#' @export
+initSolution<- function(parameters, N=20) {
+  rrepast::AoE.RandomSampling(N,parameters)
+}
+
+#' @title lowerBound
+#'
+#' @description Checks if parameters is greater than the lower bounds
+#' @param particles The particle set
+#' @param factors the defined range for objective function parameters
+#'
+#' @return The particle greater than or equal to lower limit
+#'
+#'
+#' @export
+lowerBound<- function(particles, factors) {
+  k<- rrepast::GetFactorsSize(factors)
+  for(p in 1:nrow(particles)){
+    for(i in 1:k) {
+      lb<- as.numeric(factors[i,"min"])
+      if(particles[p,i] < lb) { particles[p,i]<- lb}
+    }
+  }
+  return(particles)
+}
+
+#' @title upperBound
+#'
+#' @description Checks if parameters is below the upper bounds
+#' @param particles The particle set
+#' @param factors the defined range for objective function parameters
+#'
+#' @return The particle inside the valid upper bound
+#'
+#' @export
+upperBound<- function(particles, factors) {
+  k<- rrepast::GetFactorsSize(factors)
+  for(p in 1:nrow(particles)){
+    for(i in 1:k) {
+      ub<- as.numeric(factors[i,"max"])
+      if(particles[p,i] > ub) { particles[p,i]<- ub}
+    }
+  }
+  return(particles)
+}
+
+#' @title enforceBounds
+#'
+#' @description Checks if parameters fall within upper an lower bounds
+#'
+#' @param particles The particle set
+#' @param factors the defined range for objective function parameters
+#'
+#' @return The particle inside the valid limits
+#'
+#' @export
+enforceBounds<- function(particles, factors) {
+  k<- rrepast::GetFactorsSize(factors)
+  for(p in 1:nrow(particles)){
+    for(i in 1:k) {
+      lb<- as.numeric(factors[i,"min"]);
+      ub<- as.numeric(factors[i,"max"])
+      if( particles[p,i] < lb || particles[p,i] > ub || is.na(particles[p,i])) {
+        particles[p,i]<- runif(1,lb,ub)
+      }
+    }
+  }
+  return(particles)
+}
+
+#' @title cbuf
+#'
+#' @description Simple implementation of a circular buffer.
+#'
+#' @param b The variable holding the current buffer content
+#' @param v The new valued to be added to b
+#' @param e The length of circular buffer
+#'
+#' @return The buffer b plus the element v minus the least recently added element
+#'
+#' @importFrom utils head
+#' @export
+cbuf<- function(b,v,e) {
+  c(head(v,1),head(b,e))
+}
+
+#' @title slopes
+#'
+#' @description Calcule all slopes for the discrete x,y series
+#'
+#' @param x The x vector
+#' @param y The y vector
+#'
+#' @return A vector with all slopes
+#'
+#' @export
+slopes<- function(x, y) {
+  sapply(1:length(x),function(i, x , y) { slope(x,y,i) }, x=x, y=y)
+}
+
+#' @title slope
+#'
+#' @description Simple function for calculate the slope on the ith element
+#' position
+#'
+#' @param x The x vector
+#' @param y The y vector
+#' @param i The position
+#'
+#' @return The slope
+#'
+#' @export
+slope<- function(x, y, i) {
+  if(i > 1 && i < length(y)) {
+    v<- 0.5 * ((y[i]-y[i-1])/(x[i]-x[i-1]) + (y[i+1] - y[i])/(x[i+1]-x[i]))
+  } else {
+    v<- ifelse(i == 1,(y[i+1] - y[i])/(x[i+1]-x[i]),(y[i]-y[i-1])/(x[i]-x[i-1]))
+  }
+  v
+}
+
+## ##################################################################
+##
 ## ----------------- Functions for testing methods -----------------
 ##
 ## ##################################################################
@@ -1563,38 +1547,4 @@ f0.rosenbrock2<- function(x1, x2) { (1 - x1)^2 + 100 * (x2 - x1^2)^2 }
 f1.rosenbrock2<- function(x) { f0.rosenbrock2(x[1], x[2]) }
 
 
-#' @title slopes
-#'
-#' @description Calcule all slopes for the discrete x,y series
-#'
-#' @param x The x vector
-#' @param y The y vector
-#'
-#' @return A vector with all slopes
-#'
-#' @export
-slopes<- function(x, y) {
-  sapply(1:length(x),function(i, x , y) { slope(x,y,i) }, x=x, y=y)
-}
-
-#' @title slope
-#'
-#' @description Simple function for calculate the slope on the ith element
-#' position
-#'
-#' @param x The x vector
-#' @param y The y vector
-#' @param i The position
-#'
-#' @return The slope
-#'
-#' @export
-slope<- function(x, y, i) {
-  if(i > 1 && i < length(y)) {
-    v<- 0.5 * ((y[i]-y[i-1])/(x[i]-x[i-1]) + (y[i+1] - y[i])/(x[i+1]-x[i]))
-  } else {
-    v<- ifelse(i == 1,(y[i+1] - y[i])/(x[i+1]-x[i]),(y[i]-y[i-1])/(x[i]-x[i-1]))
-  }
-  v
-}
-
+###futile.logger
