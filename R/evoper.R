@@ -37,6 +37,46 @@ assert<- function(expresion, string) {
 
 
 ##
+## ----- Wrapping the logging system
+##
+
+#' @title elog.level
+#'
+#' @importFrom futile.logger flog.threshold
+#' @export
+elog.level<- function(level=NULL) {
+  if(!is.null(level)) {
+    flog.threshold(level)
+  }
+  flog.threshold()
+}
+
+#' @title elog.error
+#'
+#' @importFrom futile.logger flog.error
+#' @export
+elog.error<- function(...) {
+  flog.error(...)
+}
+
+#' @title elog.info
+#'
+#' @importFrom futile.logger flog.info
+#' @export
+elog.info<- function(...) {
+  flog.info(...)
+}
+
+#' @title elog.debug
+#'
+#' @importFrom futile.logger flog.debug
+#' @export
+elog.debug<- function(...) {
+  flog.debug(...)
+}
+
+
+##
 ## ----- Classes for the objective function
 ##
 
@@ -61,6 +101,7 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
     value = 'ANY',
     tolerance = 'ANY',
     converged = 'ANY',
+    maximize = 'ANY',
     bestS = 'ANY',
     bestF = 'ANY',
     counter = 'ANY'),
@@ -73,6 +114,7 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
       value<<- NULL
       tolerance<<- .Machine$double.eps^0.30
       converged<<- FALSE
+      maximize<<- FALSE
       counter<<- 0
     },
 
@@ -89,6 +131,10 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
 
     setTolerance = function(v) {
       tolerance<<- v
+    },
+
+    setMaximize = function(v=FALSE) {
+      maximize<<- v
     },
 
     Parameter = function(name, min, max) {
@@ -121,6 +167,9 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
 
     Value = function(v = NULL) {
       if(!is.null(v)) {
+        if(maximize) {
+          v<- 1/v
+        }
         value<<- v
       }
       value
@@ -135,7 +184,7 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
     },
 
     ## Evaluate population and return results
-    EvaluateV = function(swarm) {
+    EvalFitness = function(swarm) {
       Evaluate(swarm)
       Value()
     }
@@ -230,6 +279,7 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
 ##
 ## ----- Options class
 ##
+
 
 #' @title Options
 #'
@@ -521,7 +571,7 @@ abm.pso<- function(objective, options = NULL) {
 
 
   Pg<- Pi<- x<- initSolution(objective$parameters,N)
-  lbest<- pbest<- objective$EvaluateV(x)
+  lbest<- pbest<- objective$EvalFitness(x)
   Pi<- x
 
   for(i in 1:nrow(x)){
@@ -535,7 +585,7 @@ abm.pso<- function(objective, options = NULL) {
     vi<- pso.Velocity(W,vi,phi1,phi2,Pi,Pg,x)
     x<- enforceBounds((x + vi), objective$parameters)
 
-    f1<- objective$EvaluateV(x)
+    f1<- objective$EvalFitness(x)
 
     for(i in 1:nrow(x)){
       if(f1[i,"fitness"] < pbest[i,"fitness"]) {
@@ -766,7 +816,7 @@ abm.saa<- function(objective, options= NULL) {
 
   ## Generates an initial solution
   S0<- S<- initSolution(objective$parameters,1)
-  f0<- (f<- objective$EvaluateV(S0))
+  f0<- (f<- objective$EvalFitness(S0))
   C<- C0<- f[1,"fitness"]
 
   v.accept<- 0
@@ -777,7 +827,7 @@ abm.saa<- function(objective, options= NULL) {
     for(l in 1:L) {
       ## Evaluate some neighbor of S
       S1<- f.neighborhood(objective,S,d)
-      f1<- objective$EvaluateV(S1)
+      f1<- objective$EvalFitness(S1)
       delta<- (C1<- f1[1,"fitness"]) - C
 
       if(delta < 0) {
@@ -832,7 +882,7 @@ abm.saa.1<- function(objective, options= NULL) {
 
   ## Generates an initial solution
   S0<- S<- initSolution(objective$parameters,1)
-  C0<- C<- (f0<- (f<- objective$EvaluateV(S0)))[1,"fitness"]
+  C0<- C<- (f0<- (f<- objective$EvalFitness(S0)))[1,"fitness"]
 
   while(t > TMIN) {
     if ( c.accept > max.accept || c.run > max.run ) {
@@ -842,7 +892,7 @@ abm.saa.1<- function(objective, options= NULL) {
     }
 
     S<- f.neighborhood(objective,S0,d)
-    f<- objective$EvaluateV(S)
+    f<- objective$EvalFitness(S)
     delta<- (C<- f[1,"fitness"]) - C0
 
     if(-delta < e.norm) {
@@ -1033,7 +1083,7 @@ abm.acor<- function(objective, options= NULL) {
   ## --- Initialize the solution
   S<- initSolution(objective$parameters,n.ants)
 
-  C<- objective$EvaluateV(S)
+  C<- objective$EvalFitness(S)
   T<- acor.archive(S, C, W, k)
 
   for(index in 1:iterations) {
@@ -1042,7 +1092,7 @@ abm.acor<- function(objective, options= NULL) {
 
     ## --- AntBasedSolutionConstruction
     S<- acor.updateants(S, n.ants, W, s.s, s.sd)
-    C<- objective$EvaluateV(S)
+    C<- objective$EvalFitness(S)
 
     ## --- PheromoneUpdate
     T<- acor.archive(S, C, W, k)
