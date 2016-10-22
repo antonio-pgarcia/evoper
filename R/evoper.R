@@ -472,7 +472,7 @@ OptionsSDA<- setRefClass("OptionsSDA", contains = "Options",
 #'
 #' @description Entry point for optimization functions
 #'
-#' @param type The optimization method (pso,saa,sda,aco)
+#' @param type The optimization method (aco,pso,saa,sda)
 #' @param objective An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
 #' @param options An apropiate instance from a sublclass of \link{Options} class
 #'
