@@ -304,13 +304,21 @@ Options<- setRefClass("Options",
       container<<- list(iterations=100, trace=FALSE)
     },
 
-    setNeighborhoodF = function(v) {
-      neighborhood<<- v
-    },
-
-    getNeighborhoodF = function() {
+    ## Set/Get the neighborhood function
+    neighborhoodFunction = function(f=NULL) {
+      if(!is.null(f)) {
+        neighborhood<<- f
+      }
       neighborhood
     },
+
+    ##setNeighborhoodF = function(v) {
+    ##  neighborhood<<- v
+    ##},
+
+    ##getNeighborhoodF = function() {
+    ##  neighborhood
+    ##},
 
     setType = function(v) {
       type<<- v
@@ -350,7 +358,7 @@ OptionsPSO<- setRefClass("OptionsPSO", contains = "Options",
       setValue("phi1",1.193)
       setValue("phi2",1.193)
       setValue("W",0.721)
-      setNeighborhoodF(pso.neighborhood.KN)
+      neighborhoodFunction(pso.neighborhood.KN)
     }
   )
 )
@@ -379,7 +387,7 @@ OptionsSAA<- setRefClass("OptionsSAA", contains = "Options",
       setValue("d", 0.05)
       setValue("max.accept",32)
       setValue("max.reject",250)
-      setNeighborhoodF(saa.neighborhoodN)
+      neighborhoodFunction(saa.neighborhoodN)
       setTemperatureF(saa.tcte)
     },
 
@@ -567,7 +575,7 @@ abm.pso<- function(objective, options = NULL) {
   phi1<- options$getValue("phi1")
   phi2<- options$getValue("phi2")
   W<- options$getValue("W")
-  f.neighborhood<- options$getNeighborhoodF()
+  f.neighborhood<- options$neighborhoodFunction()
 
 
   Pg<- Pi<- x<- initSolution(objective$parameters,N)
@@ -811,7 +819,7 @@ abm.saa<- function(objective, options= NULL) {
   d<- options$getValue("d")
   max.accept<- options$getValue("max.accept")
   max.reject<- options$getValue("max.reject")
-  f.neighborhood<- options$getNeighborhoodF()
+  f.neighborhood<- options$neighborhoodFunction()
   f.temp<- options$getTemperatureF()
 
   ## Generates an initial solution
@@ -868,7 +876,7 @@ abm.saa.1<- function(objective, options= NULL) {
   d<- options$getValue("d")
   max.accept<- options$getValue("max.accept")
   max.reject<- options$getValue("max.reject")
-  f.neighborhood<- options$getNeighborhoodF()
+  f.neighborhood<- options$neighborhoodFunction()
   f.temp<- options$getTemperatureF()
 
   max.run<- 150
@@ -1540,6 +1548,53 @@ slope<- function(x, y, i) {
   v
 }
 
+#' @title naiveperiod
+#'
+#' @description A naive approach for finding the period in a series
+#' of data points
+#'
+#' @param d The data to search period
+#'
+#' @return A list with the average period and amplitude
+#' @export
+naiveperiod<- function(d) {
+  s0<- 0
+  i<- 0
+  sum.max<- 0
+  sum.per<- 0
+  n<- 0
+  distance<- 0
+
+  for(i in 1:(length(d)-1)) {
+    ## Checking data consistency
+    if(is.na(d[i]) || is.na(d[i+1])) { break }
+
+    ## Evaluate if current point is growing or decreasing
+    if(d[i] < d[i+1]) { signal<- 1 }
+    if(d[i] > d[i+1]) { signal<- -1 }
+    if(d[i] == d[i+1]) { signal<- 0 }
+
+    ## Increment distance between peaks
+    distance<- distance + 1
+
+    ## Detecting inflection points
+    if(s0 != signal) {
+      if(i>1){ sum.per= sum.per + distance }
+      if(signal < s0) {
+        n<- n + 1
+        sum.max<- sum.max + d[i]
+        elog.debug("amplitude=%g, period=%g",d[i], distance)
+        distance<- 0
+        i<- i + 1
+      }
+      s0<- signal
+    }
+  }
+  v<- list(period= (sum.per/n), value=(sum.max/n))
+  v
+}
+
+
 ## ##################################################################
 ##
 ## ----------------- Functions for testing methods -----------------
@@ -1596,5 +1651,83 @@ f0.rosenbrock2<- function(x1, x2) { (1 - x1)^2 + 100 * (x2 - x1^2)^2 }
 #' @export
 f1.rosenbrock2<- function(x) { f0.rosenbrock2(x[1], x[2]) }
 
+#' @title predatorprey
+#'
+#' @description The solver for Lotka-Volterra differential equation.
+#'
+#' @param x1 The growth rate of prey
+#' @param x2 The decay rate of predator
+#' @param x3 The predating effect on prey
+#' @param x4 The predating effecto on predator
+#'
+#' @return The ODE solution
+#'
+#' @importFrom deSolve ode
+#' @export
+predatorprey<- function(x1, x2, x3, x4) {
+  value<- c(x = 12, y = 12)
+  parameters<- c(c1 = x1, c2 = x2, c3 = x3, c4 = x4)
+  time<- seq(0, 96, by = 1)
 
-###futile.logger
+  ## Predator-Prey ODE function
+  f.diffequation<- function (t, y, parms) {
+    with(as.list(c(y, parms)), {
+      dx = c1 * x - c3 * x * y
+      dy = -c2 * y + c4 * x * y
+      return(list(c(dx, dy)))
+    })
+  }
+
+  ode(func = f.diffequation, y = value, parms = parameters, times = time,  method = "radau")
+}
+
+#' @title predatorprey.plot
+#'
+#' @description Generate a plot for the predator-prey ODE output.
+#'
+#' @param x1 The growth rate of prey
+#' @param x2 The decay rate of predator
+#' @param x3 The predating effect on prey
+#' @param x4 The predating effecto on predator
+#'
+#' @return An ggplot2 object
+#'
+#' @examples \dontrun{
+#'  predatorprey.plot(1.351888, 1.439185, 1.337083, 0.9079049)
+#' }
+#'
+#' @importFrom reshape melt
+#' @importFrom ggplot2 ggplot aes geom_line ggtitle
+#' @export
+predatorprey.plot<- function(x1, x2, x3, x4) {
+  v<- as.data.frame(predatorprey(x1, x2, x3, x4))
+  v.data<- melt(v, id.vars="time", value.name="value", variable_name="species")
+  p<- ggplot(data= v.data, aes(x=time, y=value, group = species, colour = species))
+  p + geom_line() + ggtitle("Predator/Prey period")
+}
+
+#' @title Period tuning for Predator-Prey
+#'
+#' @param x1 The growth rate of prey
+#' @param x2 The decay rate of predator
+#' @param x3 The predating effect on prey
+#' @param x4 The predating effecto on predator
+#'
+#' @return The solution fitness cost
+#'
+#' @examples \dontrun{
+#'	rm(list=ls())
+#'	set.seed(-27262565)
+#'	f<- PlainFunction$new(f0.periodtuningpp)
+#'	f$Parameter(name="x1",min=0.5,max=2)
+#'	f$Parameter(name="x2",min=0.5,max=2)
+#'	f$Parameter(name="x3",min=0.5,max=2)
+#'	f$Parameter(name="x4",min=0.5,max=2)
+#'	extremize("pso", f)
+#' }
+#'
+#' @export
+f0.periodtuningpp<- function(x1, x2, x3, x4) {
+  v<- predatorprey(x1, x2, x3, x4)
+  rrepast::AoE.NRMSD(naiveperiod(v[,"y"])$period,24)
+}
