@@ -165,6 +165,10 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
       return(parameters)
     },
 
+    ParametersSize = function() {
+      length(parameters[,1])
+    },
+
     Value = function(v = NULL) {
       if(!is.null(v)) {
         if(maximize) {
@@ -277,7 +281,7 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
 )
 
 ##
-## ----- Options class
+## ----- Options classes
 ##
 
 
@@ -1356,57 +1360,26 @@ abm.sda<- function(objective, options= NULL) {
   }
 
   iterations<- options$getValue("iterations")
-  steps<- options$getValue("dilutions")
+  k<- 4 * objective$ParametersSize()
+  mu<- 0.8 ## shaking ratio
 
-  o<- objective$copy()
+  ## --- Initialize the solution
+  S<- initSolution(objective$parameters, k)
+  C<- objective$EvalFitness(S)
 
-  f.optimization<- options$getOptF()
-
-  v<- v0<- f.optimization(o, options$getOptions())
-  f0<- v0$fitness
-
-  for(s in 1:steps) {
-
-    o1<- o$copy()
-    for(k in o$getParameterNames()) {
-      min0<- as.numeric(o$getParameterValue(k,"min"))
-      max0<- as.numeric(o$getParameterValue(k,"max"))
-
-      #max1<- max0 * .90^s * runif(1, .6, 1)
-      #min1<- min0 * .90^s * runif(1, .6, 1)
-      #print(paste("k=", k, "v",v[1,k]))
-
-      #U<- runif(1, .9, 1)
-      U<- 1
-      rmax1<-  (max0 * .90^s * U)
-      rmin1<-  (min0 * .90^s * U)
-      max1<- v[1,k] + (rmax1 - rmin1)/exp(1)
-      min1<- v[1,k] - (rmax1 - rmin1)/exp(1)
-
-      o1$parameters[ o1$parameters[,"name"] == k,"min"]<- ifelse(min1 > min0, min1, (runif(1) * min0))
-      o1$parameters[ o1$parameters[,"name"] == k,"max"]<- ifelse(max1 < max0, max1, (runif(1) * max0))
-    }
-
-    print("************************************************************")
-    print(o1$parameters)
-    print("------------------------------------------------------------")
-    print(paste("[",s,"]","f0=",f0,"f1=",v$fitness))
-    print("************************************************************")
-
-    #v<- abm.pso(o1, iterations=13)
-    #v<- extremize("saa", o1, iterations=13)
-    v<- f.optimization(o1, options$getOptions())
-
-    if(v$fitness < f0) {
-      f0<- v$fitness
-      v0<- v
-      o<- o1
-    }
+  for(index in 1:iterations) {
   }
 
-  eval.parent(substitute(objective<-o))
-  return(v0)
+  sda.mixing(S, C, 1)
 }
+
+#' @export
+sda.mixing<- function(s, f, mu) {
+  solution<- cbind(s,f)
+  mix<- as.matrix(solution[with(solution,order(fitness)),])
+}
+
+
 
 ## ##################################################################
 ##
@@ -1548,6 +1521,17 @@ slope<- function(x, y, i) {
   v
 }
 
+#' @export
+gm.mean<- function(x) {
+  x<- as.vector(x)
+  k<- length(x)
+  P<- x[1]
+  for(i in 2:k) {
+    P<- P * x[i]
+  }
+  (abs(P)^(1/k)) * sign(P)
+}
+
 #' @title naiveperiod
 #'
 #' @description A naive approach for finding the period in a series
@@ -1579,17 +1563,22 @@ naiveperiod<- function(d) {
 
     ## Detecting inflection points
     if(s0 != signal) {
-      if(i>1){ sum.per= sum.per + distance }
+
       if(signal < s0) {
-        n<- n + 1
-        sum.max<- sum.max + d[i]
-        elog.debug("amplitude=%g, period=%g",d[i], distance)
+        ## Discard the first peak
+        if(i>1) {
+          sum.per= sum.per + distance
+          n<- n + 1
+          sum.max<- sum.max + d[i]
+        }
+        elog.debug("iteration=%d, amplitude=%g, period=%g",i, d[i], distance)
         distance<- 0
         i<- i + 1
       }
       s0<- signal
     }
   }
+  elog.debug("summatory=%g, n=%g",sum.per, n)
   v<- list(period= (sum.per/n), value=(sum.max/n))
   v
 }
@@ -1597,7 +1586,7 @@ naiveperiod<- function(d) {
 
 ## ##################################################################
 ##
-## ----------------- Functions for testing methods -----------------
+## ----------------- Functions for testing package -----------------
 ##
 ## ##################################################################
 
