@@ -443,7 +443,7 @@ OptionsSDA<- setRefClass("OptionsSDA", contains = "Options",
     initialize = function() {
       callSuper()
       setType("sda")
-      setValue("iterations", 12)
+      setValue("iterations", 100)
       setValue("dilutions", 8)
       setOptF(abm.pso)
     },
@@ -1360,25 +1360,72 @@ abm.sda<- function(objective, options= NULL) {
   }
 
   iterations<- options$getValue("iterations")
-  k<- 4 * objective$ParametersSize()
-  mu<- 0.8 ## shaking ratio
+  k<- objective$ParametersSize()
+  mu<- 0.7641     ## shaking ratio
+  kkappa<- 0.831  ## Dilution factor
 
   ## --- Initialize the solution
-  S<- initSolution(objective$parameters, k)
-  C<- objective$EvalFitness(S)
+  s<- initSolution(objective$parameters, 4*k, "lhs")
+  c<- objective$EvalFitness(s)
+  s0<- sda.solution(s, c)
 
   for(index in 1:iterations) {
+    s<- s0[,1:k]
+    s<- sda.stock(s, c, mu, kkappa)
+    c<- objective$EvalFitness(s)
+    s1<- sda.solution(s,c)
+
+    elog.info("iteration best [%g]",s1[1,"fitness"])
+    s0<- sda.dilute(s0,s1,kkappa)
   }
 
-  sda.mixing(S, C, 1)
+  #sda.mixing(S, C, 0.1)
+  #sda.dilute(S, C, kkappa)
+  s0
+}
+
+#' @export
+sda.solution<- function(s, f) {
+  solution<- cbind(s,f)
+  as.matrix(solution[with(solution,order(fitness)),])
 }
 
 #' @export
 sda.mixing<- function(s, f, mu) {
-  solution<- cbind(s,f)
-  mix<- as.matrix(solution[with(solution,order(fitness)),])
+  k<- length(s[,1])
+  P<- function(p, x) { 1/ (p^-x) }
+  #solution<- cbind(s,f)
+  #mix<- as.matrix(solution[with(solution,order(fitness)),])
+  mix<- sda.solution(s, f)
+  p<- c( rep(1,(k/2)), P(mu,((k/2)+1):k) )
+  v<- mix[sample(1:k, size = (k/2), prob = p),]
+  apply(v[,1:length(s[1,])],2,gm.mean)
 }
 
+#' @export
+sda.stock<- function(s, f, mu, kkappa) {
+  k<- length(s[,1])
+  mix<- sda.mixing(s, f, mu)
+  solution<- cbind(s,f)
+  summatory<- sum(solution[,"fitness"])
+  stock<- c()
+  for(i in 1:k) {
+    stock<- rbind(stock, s[i,] * runif(1, kkappa, 1) + (mix * solution[1,"fitness"]/summatory))
+  }
+  as.data.frame(stock)
+}
+
+#' @export
+sda.dilute<- function(s0, s1, mu) {
+  assert(length(s0[1,]) == length(s1[1,]),"Invalid solution!")
+  k<- length(s0[1,])
+  for(i in 1:k) {
+    if(s1[i,"fitness"]< s0[i,"fitness"]) {
+        s0[i,]<- s1[i,]
+    }
+  }
+  s0
+}
 
 
 ## ##################################################################
@@ -1396,13 +1443,22 @@ sda.mixing<- function(s, f, mu) {
 #'
 #' @param parameters The Objective Function parameter list
 #' @param N The size of Solution population
+#' @param sampling The population sampling scheme (random|lhs)
 #'
 #' @return A random set of solutions
 #'
-#' @importFrom rrepast AoE.RandomSampling
+#' @importFrom rrepast AoE.RandomSampling AoE.LatinHypercube
 #' @export
-initSolution<- function(parameters, N=20) {
-  rrepast::AoE.RandomSampling(N,parameters)
+initSolution<- function(parameters, N=20, sampling="random") {
+  switch(sampling,
+    lhs={
+      rrepast::AoE.LatinHypercube(N,parameters)
+    },
+
+    {
+      rrepast::AoE.RandomSampling(N,parameters)
+    }
+  )
 }
 
 #' @title lowerBound

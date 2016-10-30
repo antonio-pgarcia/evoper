@@ -4,12 +4,14 @@
 \alias{initSolution}
 \title{initSolution}
 \usage{
-initSolution(parameters, N = 20)
+initSolution(parameters, N = 20, sampling = "random")
 }
 \arguments{
 \item{parameters}{The Objective Function parameter list}
 
 \item{N}{The size of Solution population}
+
+\item{sampling}{The population sampling scheme (random|lhs)}
 }
 \value{
 A random set of solutions
