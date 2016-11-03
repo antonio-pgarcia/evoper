@@ -102,8 +102,6 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
     tolerance = 'ANY',
     converged = 'ANY',
     maximize = 'ANY',
-    bestS = 'ANY',
-    bestF = 'ANY',
     counter = 'ANY'),
 
   methods = list(
@@ -280,6 +278,47 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
     })
 )
 
+
+#' @title Estimates
+#'
+#' @description Estimates class
+#'
+#' @importFrom methods new
+#' @export Estimates
+#' @exportClass Estimates
+Estimates<- setRefClass("Estimates",
+  fields = list(
+    iteration.best = 'ANY',
+    overall.best = 'ANY'
+  ),
+
+  methods = list(
+    initialize = function() {
+      iteration.best<<- c()
+    },
+
+    setBest = function(v) {
+      overall.best<<- v
+    },
+
+    getBest = function() {
+      overall.best
+    },
+
+    addPartialBest = function(iteration, solution) {
+      iteration.best<<- rbind(iteration.best, c(iteration,solution))
+    },
+
+    getPartialBest = function() {
+      iteration.best
+    }
+
+  )
+
+
+)
+
+
 ##
 ## ----- Options classes
 ##
@@ -419,7 +458,7 @@ OptionsACOR<- setRefClass("OptionsACOR", contains = "Options",
       setType("acor")
       setValue("n.ants", 32)  ## The number of simulated ants
       setValue("k", 16)       ## The archive size
-      setValue("q", 0.2)     ## Locality of the search process
+      setValue("q", 0.2)      ## Locality of the search process
       setValue("Xi", 0.5)     ## Equivalent to evaporation rate, higher Xi reduce convergence speed
     }
   )
@@ -436,39 +475,16 @@ OptionsACOR<- setRefClass("OptionsACOR", contains = "Options",
 #' @exportClass OptionsSDA
 OptionsSDA<- setRefClass("OptionsSDA", contains = "Options",
   fields = list(
-    optf = 'ANY'
   ),
 
   methods = list(
     initialize = function() {
       callSuper()
       setType("sda")
-      setValue("iterations", 100)
-      setValue("dilutions", 8)
-      setOptF(abm.pso)
-    },
-
-    setOptF = function(v) {
-      optf<<- v
-    },
-
-    getOptF = function() {
-      optf
-    },
-
-    getOptions = function() {
-      if(identical(optf,abm.pso)) {
-        opt<- OptionsPSO$new()
-      }
-
-      if(identical(optf,abm.saa)) {
-        opt<- OptionsSAA$new()
-      }
-
-      opt$setValue("iterations",getValue("iterations"))
-      return(opt)
+      setValue("iterations", 64)
+      setValue("mu", 0.7641)     ## shaking ratio
+      setValue("kkappa", 0.831)  ## Dilution factor
     }
-
   )
 )
 
@@ -567,12 +583,11 @@ extremize<- function(type, objective, options = NULL) {
 #' @export
 #abm.pso<- function(objective, iterations=100, N=16, phi1=1.193, phi2=1.193, W=0.721, f.neighborhood=pso.neighborhood.KN) {
 abm.pso<- function(objective, options = NULL) {
+  ## Handling the heuristic specific options
+  options<- OptionsFactory("pso", options)
 
-  if(is.null(options)) {
-    options<- OptionsPSO$new()
-  } else {
-    if(options$getType() != "pso") stop(paste("Invalid option of type [", options$getType(),"]"))
-  }
+  ## --- Creating the estimation object for returning results
+  estimates<- Estimates$new()
 
   iterations<- options$getValue("iterations")
   N<- options$getValue("N")
@@ -614,8 +629,12 @@ abm.pso<- function(objective, options = NULL) {
       }
       if(objective$isConverged(gbest[1,"fitness"])) break
     }
- }
- return(pso.best(lbest, Pg))
+
+    ## --- Storing the best of this iteration
+    estimates$addPartialBest(index, pso.best(lbest, Pg))
+  }
+  estimates$setBest(pso.best(lbest, Pg))
+  estimates
 }
 
 #' @title pso.best
@@ -809,13 +828,13 @@ pso.lbest<- function(i,pbest, topology) {
 #' @importFrom stats runif
 #' @export
 abm.saa<- function(objective, options= NULL) {
+  ## Handling the heuristic specific options
+  options<- OptionsFactory("saa", options)
 
-  if(is.null(options)) {
-    options<- OptionsSAA$new()
-  } else {
-    if(options$getType() != "saa") stop(paste("Invalid option of type [", options$getType(),"]"))
-  }
+  ## --- Creating the estimation object for returning results
+  estimates<- Estimates$new()
 
+  ## --- Configure algorithm parameters
   iterations<- options$getValue("iterations")
   T0<- options$getValue("t0")
   TMIN<- options$getValue("t.min")
@@ -837,7 +856,7 @@ abm.saa<- function(objective, options= NULL) {
   for(k in 1:iterations) {
     t<- f.temp(T0, k)
     for(l in 1:L) {
-      ## Evaluate some neighbor of S
+      ## Evaluate a neighbor of S
       S1<- f.neighborhood(objective,S,d)
       f1<- objective$EvalFitness(S1)
       delta<- (C1<- f1[1,"fitness"]) - C
@@ -854,74 +873,18 @@ abm.saa<- function(objective, options= NULL) {
       if(v.accept > max.accept) {v.accept<- 0; break}
       if(v.reject > max.reject) { S<- S0; C<- C0; v.reject<- 0}
     }
-    #print(merge(S0,f0[1,c("pset","fitness")]))
-    #print(merge(S1,f1[1,c("pset","fitness")]))
-    #print(paste("rejects=", v.reject))
+
+    ## --- Storing the best of this iteration
+    estimates$addPartialBest(k, merge(S0,f0[1,c("pset","fitness")]))
+
     if(t <= TMIN) break;
     if(objective$isConverged(f0[1,"fitness"])) break
   }
 
-  v<- merge(S0,f0[1,c("pset","fitness")])
-  return(v)
-}
-
-#' @export
-abm.saa.1<- function(objective, options= NULL) {
-
-  if(is.null(options)) {
-    options<- OptionsSAA$new()
-  } else {
-    if(options$getType() != "saa") stop(paste("Invalid option of type [", options$getType(),"]"))
-  }
-
-  t<- options$getValue("T0")
-  TMIN<- options$getValue("TMIN")
-  L<- options$getValue("L")
-  d<- options$getValue("d")
-  max.accept<- options$getValue("max.accept")
-  max.reject<- options$getValue("max.reject")
-  f.neighborhood<- options$neighborhoodFunction()
-  f.temp<- options$getTemperatureF()
-
-  max.run<- 150
-  max.accept<- 15
-  max.reject<- 250
-  e.norm<- 1e-2
-
-  c.run<- 0
-  c.accept<- 0
-  rejects<- 0
-
-  ## Generates an initial solution
-  S0<- S<- initSolution(objective$parameters,1)
-  C0<- C<- (f0<- (f<- objective$EvalFitness(S0)))[1,"fitness"]
-
-  while(t > TMIN) {
-    if ( c.accept > max.accept || c.run > max.run ) {
-      t<- f.temp(t, 0)
-      c.accept<- 0
-      c.run<- 0
-    }
-
-    S<- f.neighborhood(objective,S0,d)
-    f<- objective$EvalFitness(S)
-    delta<- (C<- f[1,"fitness"]) - C0
-
-    if(-delta < e.norm) {
-      f0<- f; C0<- C; S0<- S
-      c.accept<- c.accept + 1
-    } else {
-      if(exp(-delta/t) > runif(1,0,1)) {
-        f0<- f; C0<- C; S0<- S
-        c.accept<- c.accept + 1
-      }
-    }
-
-    if(rejects > options$getValue("max.reject")) { break }
-  }
-
-  v<- merge(S0,f0[1,c("pset","fitness")])
-  return(v)
+  estimates$setBest(merge(S0,f0[1,c("pset","fitness")]))
+  estimates
+  #v<- merge(S0,f0[1,c("pset","fitness")])
+  #return(v)
 }
 
 #' @title saa.neighborhood
@@ -1076,11 +1039,12 @@ saa.tcte<- function(t0, k) {
 #'
 #' @export
 abm.acor<- function(objective, options= NULL) {
-  if(is.null(options)) {
-    options<- OptionsACOR$new()
-  } else {
-    if(options$getType() != "acor") stop(paste("Invalid option of type [", options$getType(),"]"))
-  }
+  ## Handling the heuristic specific options
+  options<- OptionsFactory("acor", options)
+
+  ## --- Creating the estimation object for returning results
+  estimates<- Estimates$new()
+
 
   ## --- Configure algorithm parameters
   iterations<- options$getValue("iterations")
@@ -1109,11 +1073,15 @@ abm.acor<- function(objective, options= NULL) {
     ## --- PheromoneUpdate
     T<- acor.archive(S, C, W, k)
 
+    ## --- Storing the best of this iteration
+    estimates$addPartialBest(index, T[1,])
+
     ## Check for algorithm convergence
     if(objective$isConverged(T[1, "fitness"])) break
   }
 
-  return(T)
+  estimates$setBest(T[1,])
+  estimates
 }
 
 #' @title acor.updateants
@@ -1352,17 +1320,16 @@ acor.N<- function(T) {
 #'
 #' @export
 abm.sda<- function(objective, options= NULL) {
+  ## Handling the heuristic specific options
+  options<- OptionsFactory("sda", options)
 
-  if(is.null(options)) {
-    options<- OptionsSDA$new()
-  } else {
-    if(options$getType() != "sda") stop(paste("Invalid option of type [", options$getType(),"]"))
-  }
+  ## --- Creating the estimation object for returning results
+  estimates<- Estimates$new()
 
   iterations<- options$getValue("iterations")
   k<- objective$ParametersSize()
-  mu<- 0.7641     ## shaking ratio
-  kkappa<- 0.831  ## Dilution factor
+  mu<- options$getValue("mu")           ## shaking ratio
+  kkappa<- options$getValue("kkappa")   ## Dilution factor
 
   ## --- Initialize the solution
   s<- initSolution(objective$parameters, 4*k, "lhs")
@@ -1377,11 +1344,16 @@ abm.sda<- function(objective, options= NULL) {
 
     elog.info("iteration best [%g]",s1[1,"fitness"])
     s0<- sda.dilute(s0,s1,kkappa)
+
+    ## --- Storing the best of this iteration
+    estimates$addPartialBest(index, s0[1,])
+
+    ## Check for algorithm convergence
+    if(objective$isConverged(s0[1, "fitness"])) break
   }
 
-  #sda.mixing(S, C, 0.1)
-  #sda.dilute(S, C, kkappa)
-  s0
+  estimates$setBest(s0[1,])
+  estimates
 }
 
 #' @export
@@ -1394,10 +1366,10 @@ sda.solution<- function(s, f) {
 sda.mixing<- function(s, f, mu) {
   k<- length(s[,1])
   P<- function(p, x) { 1/ (p^-x) }
-  #solution<- cbind(s,f)
-  #mix<- as.matrix(solution[with(solution,order(fitness)),])
   mix<- sda.solution(s, f)
   p<- c( rep(1,(k/2)), P(mu,((k/2)+1):k) )
+
+  ## The shaking intensity controls de the probability of chosing a "heavier" value
   v<- mix[sample(1:k, size = (k/2), prob = p),]
   apply(v[,1:length(s[1,])],2,gm.mean)
 }
@@ -1405,12 +1377,13 @@ sda.mixing<- function(s, f, mu) {
 #' @export
 sda.stock<- function(s, f, mu, kkappa) {
   k<- length(s[,1])
+  n<- length(s[1,])
   mix<- sda.mixing(s, f, mu)
   solution<- cbind(s,f)
   summatory<- sum(solution[,"fitness"])
   stock<- c()
   for(i in 1:k) {
-    stock<- rbind(stock, s[i,] * runif(1, kkappa, 1) + (mix * solution[1,"fitness"]/summatory))
+    stock<- rbind(stock, s[i,] * runif(n, kkappa, 1) + (mix * solution[1,"fitness"]/summatory))
   }
   as.data.frame(stock)
 }
@@ -1577,6 +1550,10 @@ slope<- function(x, y, i) {
   v
 }
 
+#' @title gm.mean
+#'
+#' @description Geometric mean implementation
+#'
 #' @export
 gm.mean<- function(x) {
   x<- as.vector(x)
@@ -1636,6 +1613,32 @@ naiveperiod<- function(d) {
   }
   elog.debug("summatory=%g, n=%g",sum.per, n)
   v<- list(period= (sum.per/n), value=(sum.max/n))
+  v
+}
+
+#' @title OptionsFactory
+#'
+#' @description Instantiate the Options class required for
+#' the specific metaheuristic method.
+#'
+#' @param type The metaheuristic method
+#' @param v The options object
+#'
+#' @return Options object
+#'
+#' @export
+OptionsFactory<- function(type, v=NULL) {
+  if(is.null(v)) {
+    switch(type,
+      pso = { v<- OptionsPSO$new() },
+      saa = { v<- OptionsSAA$new() },
+      sda = { v<- OptionsSDA$new() },
+      acor= { v<- OptionsACOR$new() },
+      { stop("Invalid optimization function!") }
+    )
+  }
+
+  if(v$getType() != type) stop(paste("Invalid option of type [", v$getType(),"]"))
   v
 }
 
