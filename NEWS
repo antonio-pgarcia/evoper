@@ -3,16 +3,26 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Added
-- abm.aco
 
 ### Changed
 
 ## EvoPER [0.3.0] - 2016-07-10
 ### Added
+- Estimates class for returning results of extremize function
+- OptionsACOR class for ACOr Options
+- abm.ACOR Implementation of ACO for continuous domains
+- OptionsFactory Creates an instance of Options class
+- naiveperiod Search for period in a serie of data
+- gm.mean Calculate the geometric mean
+- gm.sd Calculates the geometric standard deviation
 
 ### Changed
+- extremize now returns an instance of Estimates class
+- initSolution now the sampling scheme can be random or latin hypercubes
 
 ### Fixed
+
+
 
 ## EvoPER [0.2.0] - 2016-06-22
 ### Added

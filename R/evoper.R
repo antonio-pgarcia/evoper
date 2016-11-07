@@ -42,6 +42,12 @@ assert<- function(expresion, string) {
 
 #' @title elog.level
 #'
+#' @description Configure the current log level
+#'
+#' @param level The log level (ERROR|WARN|INFO|DEBUG)
+#'
+#' @return The log level
+#'
 #' @importFrom futile.logger flog.threshold
 #' @export
 elog.level<- function(level=NULL) {
@@ -53,6 +59,10 @@ elog.level<- function(level=NULL) {
 
 #' @title elog.error
 #'
+#' @description Wrapper for logging error messages.
+#'
+#' @param ... Variable number of arguments including a format string.
+#'
 #' @importFrom futile.logger flog.error
 #' @export
 elog.error<- function(...) {
@@ -61,6 +71,10 @@ elog.error<- function(...) {
 
 #' @title elog.info
 #'
+#' @description Wrapper for logging info messages.
+#'
+#' @param ... Variable number of arguments including a format string.
+#'
 #' @importFrom futile.logger flog.info
 #' @export
 elog.info<- function(...) {
@@ -68,6 +82,10 @@ elog.info<- function(...) {
 }
 
 #' @title elog.debug
+#'
+#' @description Wrapper for logging debug messages.
+#'
+#' @param ... Variable number of arguments including a format string.
 #'
 #' @importFrom futile.logger flog.debug
 #' @export
@@ -284,16 +302,19 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
 #' @description Estimates class
 #'
 #' @importFrom methods new
+#' @importFrom boot boot boot.ci
 #' @export Estimates
 #' @exportClass Estimates
 Estimates<- setRefClass("Estimates",
   fields = list(
+    ci = 'ANY',
     iteration.best = 'ANY',
     overall.best = 'ANY'
   ),
 
   methods = list(
     initialize = function() {
+      ci<<- NULL
       iteration.best<<- c()
     },
 
@@ -311,6 +332,27 @@ Estimates<- setRefClass("Estimates",
 
     getPartialBest = function() {
       iteration.best
+    },
+
+    CI = function() {
+      if(is.null(ci)) {
+        v<- c()
+        F<- function(x, i) {
+          c( mean(x[i]), (sd(x[i])/sqrt(length(x[i])))^2 )
+        }
+        x<- as.matrix(iteration.best[Magnitude( unlist(iteration.best[,"fitness"]) ) == Magnitude( unlist(overall.best["fitness"])),])
+        for(i in 2:(length(x[1,])-2)) {
+          print(unlist(x[,i]))
+          b<- boot(unlist(x[,i]), F, R = 1000)
+          ###colnames(x)[i],
+          v<- rbind(v, boot.ci(b, conf = 0.99, type = c("norm", "basic", "perc", "stud")))
+        }
+        ##b<- boot(x, F, R = 1000)
+        ##ci<<- boot.ci(b, conf = 0.99)
+        ci<<- v
+      }
+      ##ci
+      ci
     }
 
   )
@@ -425,7 +467,7 @@ OptionsSAA<- setRefClass("OptionsSAA", contains = "Options",
       callSuper()
       setType("saa")
       setValue("t0", 1)
-      setValue("t.min", 10^-15)
+      setValue("t.min", 10^-10)
       setValue("L", 144)
       setValue("d", 0.05)
       setValue("max.accept",32)
@@ -483,7 +525,8 @@ OptionsSDA<- setRefClass("OptionsSDA", contains = "Options",
       setType("sda")
       setValue("iterations", 64)
       setValue("mu", 0.7641)     ## shaking ratio
-      setValue("kkappa", 0.831)  ## Dilution factor
+      #setValue("kkappa", 0.831)  ## Dilution factor
+      setValue("kkappa", 0.121)  ## Dilution factor
     }
   )
 )
@@ -908,8 +951,8 @@ saa.neighborhood<- function(f, S, d, n) {
     k<- colnames(S)[i]
     distance<- f.range(k) * d
     #newS[,i]<- newS[,i] + runif(1,as.numeric(f$getParameterValue(k,"min")),as.numeric(f$getParameterValue(k,"max"))) * distance
-    #newS[,i]<- newS[,i] + newS[,i] * runif(1,-1,1) * distance
-    newS[,i]<- newS[,i] + 0.01 * f.range(k) * rnorm(1)
+    newS[,i]<- newS[,i] + newS[,i] * runif(1,-1,1) * distance
+    ####newS[,i]<- newS[,i] + 0.01 * f.range(k) * rnorm(1)
     #newS[,i]<- newS[,i] + .01 * f.range(k) * runif(1,0,1)
   }
   enforceBounds(as.data.frame(newS), f$parameters)
@@ -1028,14 +1071,17 @@ saa.tcte<- function(t0, k) {
 
 #' @title Ant colony optimization for continuous domains
 #'
+#' @description An implementation of Ant Colony Optimization algorithm
+#' for continuous variables.
+#'
 #' @param objective An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
 #' @param options An apropiate instance from a sublclass of \link{Options} class
 #'
 #' @references
 #'
 #' [1] Socha, K., & Dorigo, M. (2008). Ant colony optimization for continuous domains.
-#' European Journal of Operational Research, 185(3), 1155–1173.
-#' http://doi.org/10.1016/j.ejor.2006.06.046#'
+#' European Journal of Operational Research, 185(3), 1155-1173.
+#' http://doi.org/10.1016/j.ejor.2006.06.046
 #'
 #' @export
 abm.acor<- function(objective, options= NULL) {
@@ -1099,8 +1145,8 @@ abm.acor<- function(objective, options= NULL) {
 #' @references
 #'
 #' [1] Socha, K., & Dorigo, M. (2008). Ant colony optimization for continuous domains.
-#' European Journal of Operational Research, 185(3), 1155–1173.
-#' http://doi.org/10.1016/j.ejor.2006.06.046#'
+#' European Journal of Operational Research, 185(3), 1155-1173.
+#' http://doi.org/10.1016/j.ejor.2006.06.046
 #'
 #' @export
 acor.updateants<- function(S, N, W, t.mu, t.sigma) {
@@ -1109,12 +1155,15 @@ acor.updateants<- function(S, N, W, t.mu, t.sigma) {
   n<- length(S[1,])
   for(i in 1:N) {
     l<- acor.lthgaussian(W)
-    S[i,]<- rnorm(n, t.mu[l,], t.sigma[l,])
+    S[i,]<- stats::rnorm(n, t.mu[l,], t.sigma[l,])
   }
   S
 }
 
 #' @title Weight calculation for ant colony optimization
+#'
+#' @description Calculates the weight element of ACOr algorithm for the
+#' solution archive.
 #'
 #' @param q The Algorithm parameter. When small best-ranked solution is preferred
 #' @param k The Archive size
@@ -1125,8 +1174,8 @@ acor.updateants<- function(S, N, W, t.mu, t.sigma) {
 #' @references
 #'
 #' [1] Socha, K., & Dorigo, M. (2008). Ant colony optimization for continuous domains.
-#' European Journal of Operational Research, 185(3), 1155–1173.
-#' http://doi.org/10.1016/j.ejor.2006.06.046#'
+#' European Journal of Operational Research, 185(3), 1155-1173.
+#' http://doi.org/10.1016/j.ejor.2006.06.046
 #'
 #' @export
 acor.weigth<- function(q, k, l) {
@@ -1145,8 +1194,8 @@ acor.weigth<- function(q, k, l) {
 #' @references
 #'
 #' [1] Socha, K., & Dorigo, M. (2008). Ant colony optimization for continuous domains.
-#' European Journal of Operational Research, 185(3), 1155–1173.
-#' http://doi.org/10.1016/j.ejor.2006.06.046#'
+#' European Journal of Operational Research, 185(3), 1155-1173.
+#' http://doi.org/10.1016/j.ejor.2006.06.046
 #'
 #' @export
 acor.probabilities<- function(W, l= NULL) {
@@ -1169,8 +1218,8 @@ acor.probabilities<- function(W, l= NULL) {
 #' @references
 #'
 #' [1] Socha, K., & Dorigo, M. (2008). Ant colony optimization for continuous domains.
-#' European Journal of Operational Research, 185(3), 1155–1173.
-#' http://doi.org/10.1016/j.ejor.2006.06.046#'
+#' European Journal of Operational Research, 185(3), 1155-1173.
+#' http://doi.org/10.1016/j.ejor.2006.06.046
 #'
 #' @export
 acor.lthgaussian<- function(W) {
@@ -1190,8 +1239,8 @@ acor.lthgaussian<- function(W) {
 #' @references
 #'
 #' [1] Socha, K., & Dorigo, M. (2008). Ant colony optimization for continuous domains.
-#' European Journal of Operational Research, 185(3), 1155–1173.
-#' http://doi.org/10.1016/j.ejor.2006.06.046#'
+#' European Journal of Operational Research, 185(3), 1155-1173.
+#' http://doi.org/10.1016/j.ejor.2006.06.046
 #'
 #' @export
 acor.sigma<- function(Xi, k, T) {
@@ -1224,8 +1273,8 @@ acor.sigma<- function(Xi, k, T) {
 #' @references
 #'
 #' [1] Socha, K., & Dorigo, M. (2008). Ant colony optimization for continuous domains.
-#' European Journal of Operational Research, 185(3), 1155–1173.
-#' http://doi.org/10.1016/j.ejor.2006.06.046#'
+#' European Journal of Operational Research, 185(3), 1155-1173.
+#' http://doi.org/10.1016/j.ejor.2006.06.046
 #'
 #' @export
 acor.archive<- function(s, f, w, k, T= NULL) {
@@ -1338,12 +1387,21 @@ abm.sda<- function(objective, options= NULL) {
 
   for(index in 1:iterations) {
     s<- s0[,1:k]
-    s<- sda.stock(s, c, mu, kkappa)
+
+    ##print(length(s0[1,]))
+
+    mix<- sda.shaking1(s, c, mu)
+    solute<- sda.solute(mix[,1:k])
+    s<- sda.mixing(s, c, solute)
+
+    ##print(apply(mixing[,1:length(s[1,])],2,gm.mean))
+    #s<- sda.stock(s, c, mu, kkappa)
+
     c<- objective$EvalFitness(s)
     s1<- sda.solution(s,c)
 
-    elog.info("iteration best [%g]",s1[1,"fitness"])
-    s0<- sda.dilute(s0,s1,kkappa)
+    elog.debug("iteration best [%g]",s1[1,"fitness"])
+    s0<- sda.dilute(s0,s1,0.221)
 
     ## --- Storing the best of this iteration
     estimates$addPartialBest(index, s0[1,])
@@ -1356,45 +1414,137 @@ abm.sda<- function(objective, options= NULL) {
   estimates
 }
 
+#' @title sda.solution
+#'
+#' @description Sort solutions by its cost
+#'
+#' @param s Problem solution
+#' @param f The function evaluation for s
+#'
 #' @export
 sda.solution<- function(s, f) {
   solution<- cbind(s,f)
   as.matrix(solution[with(solution,order(fitness)),])
 }
 
+#' @title sda.shaking1
+#'
+#' @description This function 'mix' the elements present in the solution. The
+#' parameter 'mu' controls the intensity of mixing. Low values give preference
+#' to best solutions and high values make the values being select randomly.
+#'
+#' @param s The Problem solution
+#' @param f The function evaluation for s
+#' @param mu The mixing intensity ratio, from 0 to 1. The shaking intensity
+#' controls de the probability of chosing a 'heavier' values.
+#'
 #' @export
-sda.mixing<- function(s, f, mu) {
+sda.shaking1<- function(s, f, mu) {
+  P<- function(p, x) { (p^x) }
   k<- length(s[,1])
-  P<- function(p, x) { 1/ (p^-x) }
-  mix<- sda.solution(s, f)
+  solution<- sda.solution(s, f)
   p<- c( rep(1,(k/2)), P(mu,((k/2)+1):k) )
 
-  ## The shaking intensity controls de the probability of chosing a "heavier" value
-  v<- mix[sample(1:k, size = (k/2), prob = p),]
-  apply(v[,1:length(s[1,])],2,gm.mean)
+  sampling<- c()
+  indexes<- 1:k
+
+  ## Repeat until sampling have the right size
+  while(length(sampling) < (k/2)) {
+    for(i in 1:length(indexes)) {
+      if(runif(1) < (1/k * p[i])) {
+        sampling<- c(sampling, indexes[i])
+        indexes<- indexes[-c(i)]
+        p<- p[-c(i)]
+        break
+      }
+    }
+  }
+  solution[sampling,]
 }
 
+#' @title sda.shaking2
+#'
+#' @description This function 'mix' the elements present in the solution. The
+#' parameter 'mu' controls the intensity of mixing. Low values give preference
+#' to best solutions and high values make the values being select randomly.
+#'
+#' @param s The Problem solution
+#' @param f The function evaluation for s
+#' @param mu The mixing intensity ratio, from 0 to 1. The shaking intensity
+#' controls de the probability of chosing a 'heavier' values.
+#'
 #' @export
-sda.stock<- function(s, f, mu, kkappa) {
+sda.shaking2<- function(s, f, mu) {
+  P<- function(p, x) { (p^x) }
   k<- length(s[,1])
+  solution<- sda.solution(s, f)
+  p<- c( rep(1,(k/2)), P(mu,((k/2)+1):k) )
+
+  solution[sample(1:k, size = (k/2), prob = p),]
+}
+
+#' @title sda.solute
+#'
+#' @description This function mimics the pipetting a solute
+#' for multiplicatively diluting it in a new solution. Basically,
+#' it is calculating the geometric mean of problem parameters in
+#' the mixed solute.
+#'
+#' @param mix The solution mix
+#'
+#' @return The 'solute' The geometric mean of mix columns
+#' @export
+sda.solute<- function(mix) {
+  n<- length(mix[1,])
+  apply(mix[,1:n],2,gm.mean)
+}
+
+#' @title sda.mixing
+#'
+#' @description Mix solute
+#'
+#' @param s The Problem solution
+#' @param f The function evaluation for s
+#' @param solute The solute generated with sda.solute.
+#'
+#' @export
+sda.mixing<- function(s, f, solute) {
+  randomize<- function(x, kkappa) { stats::rnorm(1, x, exp(abs(x * kkappa))) }
+  m<- length(s[,1])
   n<- length(s[1,])
-  mix<- sda.mixing(s, f, mu)
+
   solution<- cbind(s,f)
   summatory<- sum(solution[,"fitness"])
+
   stock<- c()
-  for(i in 1:k) {
-    stock<- rbind(stock, s[i,] * runif(n, kkappa, 1) + (mix * solution[1,"fitness"]/summatory))
+  for(i in 1:m) {
+    si<- matrix(s[i,],1,n)
+    stock<- rbind(stock, apply(rbind(si + runif(n,-10, +10), solute * solution[i,"fitness"]/summatory),2,gm.mean) )
+    #stock<- rbind(stock, apply(rbind(apply(si, 2, randomize, kkappa=0.10), solute * solution[i,"fitness"]/summatory),2,gm.mean) )
   }
   as.data.frame(stock)
 }
 
+#' @title sda.dilute
+#'
+#' @description Dilute the old solute in the new solution
+#'
+#' @param s0 The old solution
+#' @param s1 The new solution
+#' @param kkappa The dilution factor
+#'
 #' @export
-sda.dilute<- function(s0, s1, mu) {
+sda.dilute<- function(s0, s1, kkappa) {
   assert(length(s0[1,]) == length(s1[1,]),"Invalid solution!")
-  k<- length(s0[1,])
+  k<- length(s0[,1])
   for(i in 1:k) {
+    ##print(sprintf("[i=%g] f0=%g, f1=%g", i, s0[i,"fitness"], s1[i,"fitness"]))
     if(s1[i,"fitness"]< s0[i,"fitness"]) {
         s0[i,]<- s1[i,]
+    } else {
+      if(i > 1 && runif(1) < kkappa) {
+        s0[i,]<- s1[i,]
+      }
     }
   }
   s0
@@ -1552,7 +1702,10 @@ slope<- function(x, y, i) {
 
 #' @title gm.mean
 #'
-#' @description Geometric mean implementation
+#' @description Simple implementation for geometric mean
+#'
+#' @param x data
+#' @return geometric mean for data
 #'
 #' @export
 gm.mean<- function(x) {
@@ -1563,6 +1716,28 @@ gm.mean<- function(x) {
     P<- P * x[i]
   }
   (abs(P)^(1/k)) * sign(P)
+}
+
+#' @title gm.sd
+#'
+#' @description Simple implementation for geometric standard deviation
+#'
+#' @param x data
+#' @param mu The geometric mean. If not provided it is calculated.
+#'
+#' @return geometric standard deviation for data
+#'
+#' @export
+gm.sd<- function(x, mu= NULL) {
+  if(is.null(mu)) {
+    mu<- gm.mean(x)
+  }
+  ssum<- 0
+  k<- length(x)
+  for(i in 1:k) {
+    ssum<- ssum + (x[i]-mu)^2
+  }
+  exp(sqrt(ssum/k))
 }
 
 #' @title naiveperiod
@@ -1642,6 +1817,19 @@ OptionsFactory<- function(type, v=NULL) {
   v
 }
 
+#' @title Magnitude
+#'
+#' @description Calculates the magnitude order for a given value
+#'
+#' @param v The numerical value
+#'
+#' @return The magnitude order
+#'
+#' @export
+Magnitude<- function(v) {
+  trunc(log(v,10))
+}
+
 
 ## ##################################################################
 ##
@@ -1710,7 +1898,6 @@ f1.rosenbrock2<- function(x) { f0.rosenbrock2(x[1], x[2]) }
 #'
 #' @return The ODE solution
 #'
-#' @importFrom deSolve ode
 #' @export
 predatorprey<- function(x1, x2, x3, x4) {
   value<- c(x = 12, y = 12)
@@ -1726,7 +1913,7 @@ predatorprey<- function(x1, x2, x3, x4) {
     })
   }
 
-  ode(func = f.diffequation, y = value, parms = parameters, times = time,  method = "radau")
+  deSolve::ode(func = f.diffequation, y = value, parms = parameters, times = time,  method = "radau")
 }
 
 #' @title predatorprey.plot
@@ -1750,11 +1937,15 @@ predatorprey<- function(x1, x2, x3, x4) {
 predatorprey.plot<- function(x1, x2, x3, x4) {
   v<- as.data.frame(predatorprey(x1, x2, x3, x4))
   v.data<- melt(v, id.vars="time", value.name="value", variable_name="species")
-  p<- ggplot(data= v.data, aes(x=time, y=value, group = species, colour = species))
+  p<- ggplot(data= v.data, with(v.data,aes(x=time, y=value, group = species, colour = species)))
   p + geom_line() + ggtitle("Predator/Prey period")
 }
 
 #' @title Period tuning for Predator-Prey
+#'
+#' @description This function is an example on how EvoPER can be
+#' used for estimating the parameter values in order to produce
+#' oscilations with the desired period.
 #'
 #' @param x1 The growth rate of prey
 #' @param x2 The decay rate of predator
