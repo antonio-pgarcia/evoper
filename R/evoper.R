@@ -343,7 +343,7 @@ Estimates<- setRefClass("Estimates",
         x<- as.matrix(iteration.best[Magnitude( unlist(iteration.best[,"fitness"]) ) == Magnitude( unlist(overall.best["fitness"])),])
         for(i in 2:(length(x[1,])-2)) {
           print(unlist(x[,i]))
-          b<- boot(unlist(x[,i]), F, R = 1000)
+          b<- boot(unlist(x[,i]), F, R = 10000)
           ###colnames(x)[i],
           v<- rbind(v, boot.ci(b, conf = 0.99, type = c("norm", "basic", "perc", "stud")))
         }
@@ -439,6 +439,7 @@ OptionsPSO<- setRefClass("OptionsPSO", contains = "Options",
     initialize = function() {
       callSuper()
       setType("pso")
+      setValue("iterations", 50)
       setValue("N",16)
       setValue("phi1",1.193)
       setValue("phi2",1.193)
@@ -523,10 +524,9 @@ OptionsSDA<- setRefClass("OptionsSDA", contains = "Options",
     initialize = function() {
       callSuper()
       setType("sda")
-      setValue("iterations", 64)
-      setValue("mu", 0.7641)     ## shaking ratio
-      #setValue("kkappa", 0.831)  ## Dilution factor
-      setValue("kkappa", 0.121)  ## Dilution factor
+      setValue("iterations", 100)
+      setValue("mu", 0.7641)    ## shaking ratio
+      setValue("kkappa", 0.1)   ## Dilution factor
     }
   )
 )
@@ -1392,7 +1392,8 @@ abm.sda<- function(objective, options= NULL) {
 
     mix<- sda.shaking1(s, c, mu)
     solute<- sda.solute(mix[,1:k])
-    s<- sda.mixing(s, c, solute)
+    s<- sda.mixing(s, c, solute, kkappa)
+    s<- enforceBounds(s, objective$parameters)
 
     ##print(apply(mixing[,1:length(s[1,])],2,gm.mean))
     #s<- sda.stock(s, c, mu, kkappa)
@@ -1401,7 +1402,7 @@ abm.sda<- function(objective, options= NULL) {
     s1<- sda.solution(s,c)
 
     elog.debug("iteration best [%g]",s1[1,"fitness"])
-    s0<- sda.dilute(s0,s1,0.221)
+    s0<- sda.dilute(s0, s1, 0.01)
 
     ## --- Storing the best of this iteration
     estimates$addPartialBest(index, s0[1,])
@@ -1506,9 +1507,10 @@ sda.solute<- function(mix) {
 #' @param s The Problem solution
 #' @param f The function evaluation for s
 #' @param solute The solute generated with sda.solute.
+#' @param kkappa The dilution factor
 #'
 #' @export
-sda.mixing<- function(s, f, solute) {
+sda.mixing<- function(s, f, solute, kkappa) {
   randomize<- function(x, kkappa) { stats::rnorm(1, x, exp(abs(x * kkappa))) }
   m<- length(s[,1])
   n<- length(s[1,])
@@ -1516,11 +1518,23 @@ sda.mixing<- function(s, f, solute) {
   solution<- cbind(s,f)
   summatory<- sum(solution[,"fitness"])
 
+  b<- which(solution[,"fitness"] == min(solution[,"fitness"]),arr.ind = TRUE)
+
+  ##print(apply(s[,],2,sd)/apply(s[,],2,mean))
+  print(apply(s[,],2,gm.mean))
+
   stock<- c()
   for(i in 1:m) {
     si<- matrix(s[i,],1,n)
-    stock<- rbind(stock, apply(rbind(si + runif(n,-10, +10), solute * solution[i,"fitness"]/summatory),2,gm.mean) )
-    #stock<- rbind(stock, apply(rbind(apply(si, 2, randomize, kkappa=0.10), solute * solution[i,"fitness"]/summatory),2,gm.mean) )
+    sf<- 10^trunc(log(solution[i,"fitness"],10))
+    ##if(i == b) {
+    if(i == b) {
+      stock<- rbind(stock,si + si * runif(n,-1, 1))
+      #stock<- rbind(stock, apply(rbind(si + si * runif(n,-1/kkappa, 1/kkappa), solute * solution[i,"fitness"]/summatory),2,gm.mean) )
+    } else {
+      stock<- rbind(stock, apply(rbind(si + runif(n,-1/kkappa, 1/kkappa), solute * solution[i,"fitness"]/summatory),2,mean) )
+      #stock<- rbind(stock, apply(rbind(apply(si, 2, randomize, kkappa=0.10), solute * solution[i,"fitness"]/summatory),2,gm.mean) )
+    }
   }
   as.data.frame(stock)
 }
