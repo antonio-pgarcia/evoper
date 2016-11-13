@@ -476,9 +476,9 @@ OptionsSAA<- setRefClass("OptionsSAA", contains = "Options",
     initialize = function() {
       callSuper()
       setType("saa")
-      setValue("t0", 1)
-      setValue("t.min", 10^-10)
-      setValue("L", 64)
+      setValue("t0", 1*10^4)
+      setValue("t.min", 10^-5)
+      setValue("L", 32)
       setValue("d", 0.05)
       setValue("max.accept",32)
       setValue("max.reject",250)
@@ -894,7 +894,7 @@ abm.saa<- function(objective, options= NULL) {
 
   ## --- Configure algorithm parameters
   iterations<- options$getValue("iterations")
-  T0<- options$getValue("t0")
+  t<- options$getValue("t0")
   TMIN<- options$getValue("t.min")
   L<- options$getValue("L")
   d<- options$getValue("d")
@@ -905,46 +905,49 @@ abm.saa<- function(objective, options= NULL) {
 
   ## Generates an initial solution
   elog.info("Initializing solution")
-  S0<- S<- initSolution(objective$parameters,1)
-  f0<- (f<- objective$EvalFitness(S0))
-  C<- C0<- f[1,"fitness"]
+  s<- initSolution(objective$parameters,1)
+  f<- objective$EvalFitness(s)
+  S<- sortSolution(s, f)
+  bestS<- S
 
-  v.accept<- 0
-  v.reject<- 0
+  elog.info("Starting partial search")
+  for(iteration in 1:iterations) {
 
-  for(k in 1:iterations) {
-    index<- k
-    t<- f.temp(T0, k)
+    ## --- Calculate the current temperature
+    t<- f.temp(t, iteration)
+    S<- bestS
     for(l in 1:L) {
-      ## Evaluate a neighbor of S
-      S1<- f.neighborhood(objective,S,d)
-      f1<- objective$EvalFitness(S1)
-      delta<- (C1<- f1[1,"fitness"]) - C
+      ## Evaluate a neighbor of s
+      s1<- f.neighborhood(objective,getSolution(S),0.05)
+      f1<- objective$EvalFitness(s1)
+      S1<- sortSolution(s1, f1)
 
-      if(delta < 0) {
-        v.reject<- 0
-        v.accept<- v.accept + 1
-        S<- S1; f<- f1; C<- C1
-        if(C < C0) { S0<- S; f0<- f; C0<- C }
+      ## --- New solution is beter than the previous one
+      if(bestFitness(S1) < bestFitness(S)) {
+        S<- S1
+        if(bestFitness(S1) < bestFitness(bestS)) {
+          bestS<- S1
+        }
       } else {
-        if(runif(1,0,1) < exp(-delta/t)) { v.accept<- v.accept + 1; S<- S1; f<- f1; C<- C1 }
-        else {v.reject<- v.reject + 1}
+        ## --- Calculate the cost delta
+        delta<- bestFitness(S1) - bestFitness(S)
+        if(runif(1) < exp(-delta/t)) {
+          S<- S1
+        }
       }
-      if(v.accept > max.accept) {v.accept<- 0; break}
-      if(v.reject > max.reject) { S<- S0; C<- C0; v.reject<- 0}
     }
 
     ## Show current bests
-    elog.info("Iteration=%d/%d, best fitness=%g, iteration best fitness=%g", index, iterations, f0[1,"fitness"], f1[1,"fitness"])
+    elog.info("Iteration=%d/%d, best fitness=%g, iteration best fitness=%g", iteration, iterations, bestFitness(bestS), bestFitness(S))
 
     ## --- Storing the best of this iteration
-    estimates$addPartialBest(k, merge(S0,f0[1,c("pset","fitness")]))
+    estimates$addPartialBest(iteration, S)
 
     if(t <= TMIN) break;
-    if(objective$isConverged(f0[1,"fitness"])) break
+    if(objective$isConverged(bestFitness(bestS))) break
   }
 
-  estimates$setBest(merge(S0,f0[1,c("pset","fitness")]))
+  estimates$setBest(bestS)
   estimates
 }
 
@@ -969,8 +972,8 @@ saa.neighborhood<- function(f, S, d, n) {
     k<- colnames(S)[i]
     distance<- f.range(k) * d
     #newS[,i]<- newS[,i] + runif(1,as.numeric(f$getParameterValue(k,"min")),as.numeric(f$getParameterValue(k,"max"))) * distance
-    newS[,i]<- newS[,i] + newS[,i] * runif(1,-1,1) * distance
-    ####newS[,i]<- newS[,i] + 0.01 * f.range(k) * rnorm(1)
+    newS[,i]<- newS[,i] + runif(1,-1,1) * distance
+    #####>newS[,i]<- newS[,i] + 0.01 * f.range(k) * rnorm(1)
     #newS[,i]<- newS[,i] + .01 * f.range(k) * runif(1,0,1)
   }
   enforceBounds(as.data.frame(newS), f$parameters)
@@ -1123,7 +1126,6 @@ abm.acor<- function(objective, options= NULL) {
   ## --- Initialize the solution
   elog.info("Initializing solution")
   S<- initSolution(objective$parameters,n.ants)
-
   C<- objective$EvalFitness(S)
   T<- acor.archive(S, C, W, k)
 
@@ -1723,6 +1725,36 @@ sortSolution<- function(s, f) {
   solution<- cbind(s,f[,c("pset","fitness")])
   as.data.frame(solution[with(solution,order(fitness)),])
 }
+
+#' @title bestFitness
+#'
+#' @description Given a set S of N solutions created with sortSolution, this function
+#' returns the fitness component fot the best solution.
+#'
+#' @param S The solution set
+#'
+#' @return The best fitness value
+#'
+#' @export
+bestFitness<- function(S) {
+  S[1,"fitness"]
+}
+
+#' @title getSolution
+#'
+#' @description Given a set S of N solutions created with sortSolution, this function
+#' returns the solution component fot the best solution.
+#'
+#' @param S The solution set
+#'
+#' @return The best solution values
+#'
+#' @export
+getSolution<- function(S) {
+  S[,c("pset","fitness")]<- list(NULL)
+  S
+}
+
 
 #' @title lowerBound
 #'
