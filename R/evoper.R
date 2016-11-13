@@ -135,7 +135,7 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
     },
 
     stats = function() {
-      cbind(total_evals=counter,converged=converged)
+      cbind(total_evals=counter,converged=converged,tolerance=tolerance)
     },
 
     isConverged = function(v) {
@@ -249,6 +249,7 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
     model = 'ANY',
     directory = 'character',
     datasource = 'character',
+    replicates = 'numeric',
     endAt = 'numeric'
   ),
 
@@ -259,6 +260,7 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
       } else {
         directory<<- d
         datasource<<- ds
+        replicates<<- 1
         endAt<<- t
       }
       callSuper(o)
@@ -279,7 +281,7 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
       }
 
       ## Evaluate model
-      object<<- RunExperiment(model,r=1,p, objective)
+      object<<- RunExperiment(model,r=replicates,p, objective)
 
       # Sum the objective output and change the column name
       object$output<<- col.sum(object$output)
@@ -287,6 +289,13 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
       names(object$output)<<- replace(n, which(n == "total"),c("fitness"))
 
       Value(object$output)
+    },
+
+    Replicates = function(v= NULL) {
+      if(!is.null(v)) {
+        replicates<<- v
+      }
+      replicates
     },
 
     show = function() {
@@ -439,7 +448,7 @@ OptionsPSO<- setRefClass("OptionsPSO", contains = "Options",
     initialize = function() {
       callSuper()
       setType("pso")
-      setValue("iterations", 50)
+      setValue("iterations", 1000)
       setValue("N",16)
       setValue("phi1",1.193)
       setValue("phi2",1.193)
@@ -469,7 +478,7 @@ OptionsSAA<- setRefClass("OptionsSAA", contains = "Options",
       setType("saa")
       setValue("t0", 1)
       setValue("t.min", 10^-10)
-      setValue("L", 144)
+      setValue("L", 64)
       setValue("d", 0.05)
       setValue("max.accept",32)
       setValue("max.reject",250)
@@ -499,8 +508,8 @@ OptionsACOR<- setRefClass("OptionsACOR", contains = "Options",
     initialize = function() {
       callSuper()
       setType("acor")
-      setValue("n.ants", 32)  ## The number of simulated ants
-      setValue("k", 16)       ## The archive size
+      setValue("n.ants", 64)  ## The number of simulated ants
+      setValue("k", 32)       ## The archive size
       setValue("q", 0.2)      ## Locality of the search process
       setValue("Xi", 0.5)     ## Equivalent to evaporation rate, higher Xi reduce convergence speed
     }
@@ -524,9 +533,10 @@ OptionsSDA<- setRefClass("OptionsSDA", contains = "Options",
     initialize = function() {
       callSuper()
       setType("sda")
-      setValue("iterations", 100)
-      setValue("mu", 0.7641)    ## shaking ratio
-      setValue("kkappa", 0.1)   ## Dilution factor
+      setValue("n",10)            ## Solution size
+      setValue("mu", 0.7641)      ## Shaking ratio
+      setValue("kkappa", 0.1)     ## Dilution factor
+      setValue("iterations", 50)  ## Total number of iterations
     }
   )
 )
@@ -640,6 +650,7 @@ abm.pso<- function(objective, options = NULL) {
   f.neighborhood<- options$neighborhoodFunction()
 
 
+  elog.info("Initializing solution")
   Pg<- Pi<- x<- initSolution(objective$parameters,N)
   lbest<- pbest<- objective$EvalFitness(x)
   Pi<- x
@@ -652,6 +663,8 @@ abm.pso<- function(objective, options = NULL) {
   vi<- Pi * 0.1
 
   for(index in 1:iterations) {
+    elog.info("Iteration=%d/%d, fitness=%g", index, iterations, (pso.best(lbest, Pg))["fitness"])
+
     vi<- pso.Velocity(W,vi,phi1,phi2,Pi,Pg,x)
     x<- enforceBounds((x + vi), objective$parameters)
 
@@ -670,8 +683,10 @@ abm.pso<- function(objective, options = NULL) {
         lbest[i,]<- gbest
         Pg[i,]<- Pi[lbest[i,"pset"],]
       }
-      if(objective$isConverged(gbest[1,"fitness"])) break
     }
+
+    ## --- Exit if convergence criteria is met
+    if(objective$isConverged(gbest[1,"fitness"])) break
 
     ## --- Storing the best of this iteration
     estimates$addPartialBest(index, pso.best(lbest, Pg))
@@ -889,6 +904,7 @@ abm.saa<- function(objective, options= NULL) {
   f.temp<- options$getTemperatureF()
 
   ## Generates an initial solution
+  elog.info("Initializing solution")
   S0<- S<- initSolution(objective$parameters,1)
   f0<- (f<- objective$EvalFitness(S0))
   C<- C0<- f[1,"fitness"]
@@ -897,6 +913,7 @@ abm.saa<- function(objective, options= NULL) {
   v.reject<- 0
 
   for(k in 1:iterations) {
+    index<- k
     t<- f.temp(T0, k)
     for(l in 1:L) {
       ## Evaluate a neighbor of S
@@ -917,6 +934,9 @@ abm.saa<- function(objective, options= NULL) {
       if(v.reject > max.reject) { S<- S0; C<- C0; v.reject<- 0}
     }
 
+    ## Show current bests
+    elog.info("Iteration=%d/%d, best fitness=%g, iteration best fitness=%g", index, iterations, f0[1,"fitness"], f1[1,"fitness"])
+
     ## --- Storing the best of this iteration
     estimates$addPartialBest(k, merge(S0,f0[1,c("pset","fitness")]))
 
@@ -926,8 +946,6 @@ abm.saa<- function(objective, options= NULL) {
 
   estimates$setBest(merge(S0,f0[1,c("pset","fitness")]))
   estimates
-  #v<- merge(S0,f0[1,c("pset","fitness")])
-  #return(v)
 }
 
 #' @title saa.neighborhood
@@ -1103,11 +1121,13 @@ abm.acor<- function(objective, options= NULL) {
   W<- acor.weigth(q,k,1:k)
 
   ## --- Initialize the solution
+  elog.info("Initializing solution")
   S<- initSolution(objective$parameters,n.ants)
 
   C<- objective$EvalFitness(S)
   T<- acor.archive(S, C, W, k)
 
+  elog.info("Starting search")
   for(index in 1:iterations) {
     s.s<- acor.S(T)
     s.sd<- acor.sigma(Xi, k, T)
@@ -1117,7 +1137,10 @@ abm.acor<- function(objective, options= NULL) {
     C<- objective$EvalFitness(S)
 
     ## --- PheromoneUpdate
-    T<- acor.archive(S, C, W, k)
+    T<- acor.archive(S, C, W, k, T)
+
+    ## Show current bests
+    elog.info("Iteration=%d/%d, best fitness=%g, iteration best fitness=%g", index, iterations, T[1, "fitness"], (sortSolution(S, C))[1,"fitness"])
 
     ## --- Storing the best of this iteration
     estimates$addPartialBest(index, T[1,])
@@ -1318,7 +1341,8 @@ acor.S<- function(T) {
 #'
 #' @export
 acor.F<- function(T) {
-  T$fitness
+  T[,c(names(acor.S(T)), "w")]<- list(NULL)
+  T
 }
 
 #' @title acor.W
@@ -1332,7 +1356,8 @@ acor.F<- function(T) {
 #'
 #' @export
 acor.W<- function(T) {
-  T$w
+  T[,c(names(acor.S(T)), "fitness")]<- list(NULL)
+  T
 }
 
 #' @title acor.N
@@ -1375,37 +1400,52 @@ abm.sda<- function(objective, options= NULL) {
   ## --- Creating the estimation object for returning results
   estimates<- Estimates$new()
 
-  iterations<- options$getValue("iterations")
   k<- objective$ParametersSize()
-  mu<- options$getValue("mu")           ## shaking ratio
-  kkappa<- options$getValue("kkappa")   ## Dilution factor
+
+  n<- options$getValue("n")                   ## Solution size
+  mu<- options$getValue("mu")                 ## shaking ratio
+  kkappa<- options$getValue("kkappa")         ## Dilution factor
+  iterations<- options$getValue("iterations")
 
   ## --- Initialize the solution
-  s<- initSolution(objective$parameters, 4*k, "lhs")
+  elog.info("Initializing solution")
+  s<- initSolution(objective$parameters, 2*n, "lhs")
+
+  delta<- c(10,10,10,1)
+  names(delta)<- names(s)[1:4]
+  ##delta<- as.data.frame(delta)
+  print(delta)
+
+  s<- sda.roundsolution(s, kkappa, objective)
   c<- objective$EvalFitness(s)
-  s0<- sda.solution(s, c)
+  s1<- s0<- sda.solution(s, c)
+  s1[,"fitness"]<- Inf
+
+
 
   for(index in 1:iterations) {
     s<- s0[,1:k]
+    elog.info("Iteration=%d/%d, fitness=%g, iteration fitness=%g", index, iterations, s0[1,"fitness"], s1[1,"fitness"])
 
-    ##print(length(s0[1,]))
+    p<- sda.selectparents(2*n)
+    s<- sda.recombination(s, p)
+    s<- sda.mutate(s, 0.9 * ((iterations+1-index)/iterations), delta)
 
-    mix<- sda.shaking1(s, c, mu)
-    solute<- sda.solute(mix[,1:k])
-    s<- sda.mixing(s, c, solute, kkappa)
     s<- enforceBounds(s, objective$parameters)
-
-    ##print(apply(mixing[,1:length(s[1,])],2,gm.mean))
-    #s<- sda.stock(s, c, mu, kkappa)
+    s<- sda.roundsolution(s, kkappa, objective)
 
     c<- objective$EvalFitness(s)
     s1<- sda.solution(s,c)
 
     elog.debug("iteration best [%g]",s1[1,"fitness"])
-    s0<- sda.dilute(s0, s1, 0.01)
+    s0<- as.data.frame(rbind(s0,s1))
+
+    s0<- s0[with(s0,order(fitness)),]
+
+    print(s0[1:10,])
 
     ## --- Storing the best of this iteration
-    estimates$addPartialBest(index, s0[1,])
+    estimates$addPartialBest(index, s1[1,])
 
     ## Check for algorithm convergence
     if(objective$isConverged(s0[1, "fitness"])) break
@@ -1424,9 +1464,10 @@ abm.sda<- function(objective, options= NULL) {
 #'
 #' @export
 sda.solution<- function(s, f) {
-  solution<- cbind(s,f)
-  as.matrix(solution[with(solution,order(fitness)),])
+  solution<- cbind(s,f[,c("pset","fitness")])
+  as.data.frame(solution[with(solution,order(fitness)),])
 }
+
 
 #' @title sda.shaking1
 #'
@@ -1500,6 +1541,84 @@ sda.solute<- function(mix) {
   apply(mix[,1:n],2,gm.mean)
 }
 
+#' @export
+sda.delta<- function(rrange, kkappa) {
+  round(rrange*kkappa)
+}
+
+#' @export
+sda.trunc<- function(v, rrange, kkappa) {
+  delta<- sda.delta(rrange, kkappa)
+  trunc(v/delta) * delta
+}
+
+#' @export
+sda.roundsolution<- function(s, kkappa, objective) {
+  for(k in colnames(s)) {
+    s[k]<- sda.trunc(s[k],objective$getParameterRange(k),kkappa)
+  }
+  s[s == 0]<- 1
+  s
+}
+
+#' @export
+sda.mutate<- function(s, rho, delta) {
+  for(k in colnames(s)) {
+    if(runif(1) < rho) {
+      values<- seq(-2*delta[k],2*delta[k],delta[k])
+      values[-c(which(values == 0))]
+      s[k]<- s[k] + sample(values, length(s[k]))
+    }
+  }
+  s
+}
+
+#' @export
+sda.selectparents<- function(k) {
+  ##P<- function(p, x) { (p*1/2^x) }
+  P<- function(p, x) { (p*1/x^2) }
+  w<- c( rep(1,(k/2)), P(0.5,((k/2)+1):k) )
+
+  sampling<- c()
+  indexes<- 1:k
+
+  ## Repeat until sampling have the right size
+  while(length(sampling) < (k/2)) {
+    for(i in 1:length(indexes)) {
+      if(runif(1) < (1/k * w[i])) {
+        sampling<- c(sampling, indexes[i])
+        indexes<- indexes[-c(i)]
+        w<- w[-c(i)]
+        break
+      }
+    }
+  }
+  print(sampling)
+  matrix(sampling,ncol = 2,byrow = TRUE)
+}
+
+#' @export
+sda.recombination<- function(s, p) {
+  r<- c()
+  for(i in 1:length(p[,1])) {
+    #print(i)
+    r<- rbind(r, sda.recombinepair(s[p[i,1],], s[p[i,2],]))
+  }
+  as.data.frame(r)
+}
+
+#' @export
+sda.recombinepair<- function(p1, p2) {
+  assert(all.equal(colnames(p1),colnames(p2)),"Incompatible parents")
+  offspring<- p1
+  for(k in colnames(p1)) {
+    if(runif(1) < 0.5) {
+      offspring[k]<- p2[k]
+    }
+  }
+  offspring
+}
+
 #' @title sda.mixing
 #'
 #' @description Mix solute
@@ -1510,32 +1629,26 @@ sda.solute<- function(mix) {
 #' @param kkappa The dilution factor
 #'
 #' @export
-sda.mixing<- function(s, f, solute, kkappa) {
+sda.mixing<- function(s, f, solute, kkappa, objective) {
   randomize<- function(x, kkappa) { stats::rnorm(1, x, exp(abs(x * kkappa))) }
   m<- length(s[,1])
   n<- length(s[1,])
 
-  solution<- cbind(s,f)
+  solution<- sda.solution(s,f)
   summatory<- sum(solution[,"fitness"])
-
-  b<- which(solution[,"fitness"] == min(solution[,"fitness"]),arr.ind = TRUE)
-
-  ##print(apply(s[,],2,sd)/apply(s[,],2,mean))
-  print(apply(s[,],2,gm.mean))
 
   stock<- c()
   for(i in 1:m) {
     si<- matrix(s[i,],1,n)
-    sf<- 10^trunc(log(solution[i,"fitness"],10))
-    ##if(i == b) {
-    if(i == b) {
-      stock<- rbind(stock,si + si * runif(n,-1, 1))
-      #stock<- rbind(stock, apply(rbind(si + si * runif(n,-1/kkappa, 1/kkappa), solute * solution[i,"fitness"]/summatory),2,gm.mean) )
+    weight<- solution[i,"fitness"]/summatory
+    if(runif(1) < 1/5) {
+      stock<- rbind(stock, apply(rbind(sda.mutate(si,kkappa,1, objective), solute * weight),2,mean) )
     } else {
-      stock<- rbind(stock, apply(rbind(si + runif(n,-1/kkappa, 1/kkappa), solute * solution[i,"fitness"]/summatory),2,mean) )
-      #stock<- rbind(stock, apply(rbind(apply(si, 2, randomize, kkappa=0.10), solute * solution[i,"fitness"]/summatory),2,gm.mean) )
+      #stock<- rbind(stock,sda.mutate(si,kkappa, 1/n, objective))
+      stock<- rbind(stock, apply(rbind(sda.mutate(si,kkappa,1, objective), solute * weight),2,mean) )
     }
   }
+  print(stock)
   as.data.frame(stock)
 }
 
@@ -1556,7 +1669,7 @@ sda.dilute<- function(s0, s1, kkappa) {
     if(s1[i,"fitness"]< s0[i,"fitness"]) {
         s0[i,]<- s1[i,]
     } else {
-      if(i > 1 && runif(1) < kkappa) {
+      if(i > 1 && runif(1) < 1/5) {
         s0[i,]<- s1[i,]
       }
     }
@@ -1596,6 +1709,19 @@ initSolution<- function(parameters, N=20, sampling="random") {
       rrepast::AoE.RandomSampling(N,parameters)
     }
   )
+}
+
+#' @title sortSolution
+#'
+#' @description Sort solution by its respective fitness
+#'
+#' @param s Problem solution
+#' @param f The function evaluation for s
+#'
+#' @export
+sortSolution<- function(s, f) {
+  solution<- cbind(s,f[,c("pset","fitness")])
+  as.data.frame(solution[with(solution,order(fitness)),])
 }
 
 #' @title lowerBound
