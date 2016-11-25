@@ -19,5 +19,5 @@ LazyData: TRUE
 Depends:
     rrepast
 Imports:
-    methods,  futile.logger, boot, reshape, ggplot2, deSolve
+    methods,  futile.logger, boot, reshape, ggplot2, deSolve, plot3D
 RoxygenNote: 5.0.1

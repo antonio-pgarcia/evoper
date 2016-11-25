@@ -115,8 +115,10 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
   fields = list(
     object = 'ANY',
     objective = 'function',
+    replicates = 'numeric',
     parameters = 'ANY',
     value = 'ANY',
+    rawdata = 'ANY',
     tolerance = 'ANY',
     converged = 'ANY',
     maximize = 'ANY',
@@ -126,8 +128,10 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
     initialize = function(funct) {
       object<<- NULL
       objective<<- funct
+      replicates<<- 1
       parameters<<- NULL
       value<<- NULL
+      rawdata<<- NULL
       tolerance<<- .Machine$double.eps^0.30
       converged<<- FALSE
       maximize<<- FALSE
@@ -154,6 +158,7 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
     },
 
     Parameter = function(name, min, max) {
+      assert(hasArg(name) && hasArg(min) && hasArg(min), "Please provide the required parameters")
       if(is.null(parameters)) {
         parameters<<- rrepast::AddFactor(c(), name= name, min= min, max= max)
       } else {
@@ -166,7 +171,23 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
     },
 
     getParameter = function(key) {
-      parameters[which(parameters[,"name"] == key),]
+      p<- parameters[which(parameters[,"name"] == key),]
+      p<- as.data.frame(as.list(p))
+
+      for(k in names(p)) {
+        if(is.factor(p[,k])) {
+          v<- levels(p[,k])
+        } else {
+          v<- p[,k]
+        }
+
+        if(k %in% c("min","max")) {
+          p[,k]<- as.numeric(v)
+        } else {
+          p[,k]<- v
+        }
+      }
+      p
     },
 
     getParameterNames = function() {
@@ -177,12 +198,38 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
       parameters[which(parameters[,"name"] == key),name]
     },
 
-    Parameters = function() {
-      return(parameters)
+    getParameters = function() {
+      p<- data.frame(parameters,  stringsAsFactors=FALSE)
+
+      for(i in 1:length(p[,1])) {
+        for(k in names(p)) {
+          v<- p[,k]
+          if(k %in% c("min","max")) {
+            p[,k]<- as.numeric(v)
+          } else {
+            p[,k]<- v
+          }
+        }
+      }
+      p
     },
 
     ParametersSize = function() {
       length(parameters[,1])
+    },
+
+    RawData = function(v = NULL) {
+      if(!is.null(v)) {
+        rawdata<<- v
+      }
+      rawdata
+    },
+
+    Replicates = function(v= NULL) {
+      if(!is.null(v)) {
+        replicates<<- v
+      }
+      replicates
     },
 
     Value = function(v = NULL) {
@@ -249,7 +296,6 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
     model = 'ANY',
     directory = 'character',
     datasource = 'character',
-    replicates = 'numeric',
     endAt = 'numeric'
   ),
 
@@ -260,7 +306,6 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
       } else {
         directory<<- d
         datasource<<- ds
-        replicates<<- 1
         endAt<<- t
       }
       callSuper(o)
@@ -288,14 +333,8 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
       n<- names(object$output)
       names(object$output)<<- replace(n, which(n == "total"),c("fitness"))
 
+      RawData(object)
       Value(object$output)
-    },
-
-    Replicates = function(v= NULL) {
-      if(!is.null(v)) {
-        replicates<<- v
-      }
-      replicates
     },
 
     show = function() {
@@ -317,14 +356,17 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
 Estimates<- setRefClass("Estimates",
   fields = list(
     ci = 'ANY',
+    overall.best = 'ANY',
     iteration.best = 'ANY',
-    overall.best = 'ANY'
+    visited.space = 'ANY'
   ),
 
   methods = list(
     initialize = function() {
-      ci<<- NULL
+      overall.best<<- Inf
       iteration.best<<- c()
+      visited.space<<- c()
+
     },
 
     setBest = function(v) {
@@ -335,33 +377,29 @@ Estimates<- setRefClass("Estimates",
       overall.best
     },
 
-    addPartialBest = function(iteration, solution) {
+    addIterationBest = function(iteration, solution) {
       iteration.best<<- rbind(iteration.best, c(iteration,solution))
     },
 
-    getPartialBest = function() {
-      iteration.best
+    getIterationBest = function() {
+      data.frame(iteration.best, stringsAsFactors=FALSE)
     },
 
-    CI = function() {
-      if(is.null(ci)) {
-        v<- c()
-        F<- function(x, i) {
-          c( mean(x[i]), (sd(x[i])/sqrt(length(x[i])))^2 )
+    addVisitedSpace = function(solution) {
+      m<- nrow(solution)
+
+      if(m > 1) {
+        for(i in 1:m) {
+          visited.space<<- rbind(visited.space, solution[i,])
         }
-        x<- as.matrix(iteration.best[Magnitude( unlist(iteration.best[,"fitness"]) ) == Magnitude( unlist(overall.best["fitness"])),])
-        for(i in 2:(length(x[1,])-2)) {
-          print(unlist(x[,i]))
-          b<- boot(unlist(x[,i]), F, R = 10000)
-          ###colnames(x)[i],
-          v<- rbind(v, boot.ci(b, conf = 0.99, type = c("norm", "basic", "perc", "stud")))
-        }
-        ##b<- boot(x, F, R = 1000)
-        ##ci<<- boot.ci(b, conf = 0.99)
-        ci<<- v
+      } else {
+        visited.space<<- rbind(visited.space, solution)
       }
-      ##ci
-      ci
+
+    },
+
+    getVisitedSpace = function() {
+      data.frame(visited.space, stringsAsFactors=FALSE)
     }
 
   )
@@ -432,6 +470,13 @@ Options<- setRefClass("Options",
 
     Keys = function() {
       names(container)
+    },
+
+    toString = function() {
+      sstring<- c()
+      values<- unlist(container)
+      for(k in names(values)) { sstring<- paste0(sstring,k,"=",values[k],sep='\t') }
+      sstring
     }
   )
 )
@@ -448,7 +493,7 @@ OptionsPSO<- setRefClass("OptionsPSO", contains = "Options",
     initialize = function() {
       callSuper()
       setType("pso")
-      setValue("iterations", 1000)
+      #setValue("iterations", 1000)
       setValue("N",16)
       setValue("phi1",1.193)
       setValue("phi2",1.193)
@@ -478,10 +523,8 @@ OptionsSAA<- setRefClass("OptionsSAA", contains = "Options",
       setType("saa")
       setValue("t0", 1*10^4)
       setValue("t.min", 10^-5)
-      setValue("L", 32)
+      setValue("L", 50)
       setValue("d", 0.05)
-      setValue("max.accept",32)
-      setValue("max.reject",250)
       neighborhoodFunction(saa.neighborhoodN)
       setTemperatureF(saa.tcte)
     },
@@ -516,27 +559,51 @@ OptionsACOR<- setRefClass("OptionsACOR", contains = "Options",
   )
 )
 
-#' @title OptionsSDA
+
+#' @title OptionsEES1
 #'
-#' @description Options for Serial Dilutions method
+#' @description Options for EvoPER Evolutionary Stratety 1
 #'
-#' @field dilutions The desired dilutions
 #'
 #' @importFrom methods new
-#' @export OptionsSDA
-#' @exportClass OptionsSDA
-OptionsSDA<- setRefClass("OptionsSDA", contains = "Options",
+#' @export OptionsEES1
+#' @exportClass OptionsEES1
+OptionsEES1<- setRefClass("OptionsEES1", contains = "Options",
   fields = list(
   ),
 
   methods = list(
     initialize = function() {
       callSuper()
-      setType("sda")
-      setValue("n",10)            ## Solution size
-      setValue("mu", 0.7641)      ## Shaking ratio
-      setValue("kkappa", 0.1)     ## Dilution factor
-      setValue("iterations", 50)  ## Total number of iterations
+      setType("ees1")
+      setValue("N", 6)              ## Solution size
+      setValue("mu", 0.2)           ## Fitness preference strenght
+      setValue("kkappa", 0.1)       ## Selective pressure
+      setValue("iterations", 50)    ## Total number of iterations
+    }
+  )
+)
+
+
+#' @title OptionsEES2
+#'
+#' @description Options for Serial Dilutions method
+#'
+#' @field dilutions The desired dilutions
+#'
+#' @importFrom methods new
+#' @export OptionsEES2
+#' @exportClass OptionsEES2
+OptionsEES2<- setRefClass("OptionsEES2", contains = "Options",
+  fields = list(
+  ),
+
+  methods = list(
+    initialize = function() {
+      callSuper()
+      setType("ees2")
+      setValue("N", 100)            ## Solution size
+      setValue("iterations", 10)   ## Total number of iterations
     }
   )
 )
@@ -578,12 +645,16 @@ extremize<- function(type, objective, options = NULL) {
       optimization.fun<- abm.saa
     },
 
-    sda={
-      optimization.fun<- abm.sda
-    },
-
     acor={
       optimization.fun<- abm.acor
+    },
+
+    ees1={
+      optimization.fun<- abm.ees1
+    },
+
+    ees2={
+      optimization.fun<- abm.ees2
     },
 
     {
@@ -662,8 +733,9 @@ abm.pso<- function(objective, options = NULL) {
 
   vi<- Pi * 0.1
 
+  elog.info("Starting metaheuristic")
   for(index in 1:iterations) {
-    elog.info("Iteration=%d/%d, fitness=%g", index, iterations, (pso.best(lbest, Pg))["fitness"])
+    #elog.info("Iteration=%d/%d, fitness=%g", index, iterations, (pso.best(lbest, Pg))["fitness"])
 
     vi<- pso.Velocity(W,vi,phi1,phi2,Pi,Pg,x)
     x<- enforceBounds((x + vi), objective$parameters)
@@ -688,8 +760,14 @@ abm.pso<- function(objective, options = NULL) {
     ## --- Exit if convergence criteria is met
     if(objective$isConverged(gbest[1,"fitness"])) break
 
+    s1<- sortSolution(x,f1)
+    ## Show current bests
+    elog.info("Iteration=%d/%d, best fitness=%g, iteration best fitness=%g", index, iterations, (pso.best(lbest, Pg))["fitness"], s1[1,"fitness"])
+
+    estimates$addVisitedSpace(s1)
+
     ## --- Storing the best of this iteration
-    estimates$addPartialBest(index, pso.best(lbest, Pg))
+    estimates$addIterationBest(index, s1[1,]) # pso.best(lbest, Pg))
   }
   estimates$setBest(pso.best(lbest, Pg))
   estimates
@@ -898,8 +976,6 @@ abm.saa<- function(objective, options= NULL) {
   TMIN<- options$getValue("t.min")
   L<- options$getValue("L")
   d<- options$getValue("d")
-  max.accept<- options$getValue("max.accept")
-  max.reject<- options$getValue("max.reject")
   f.neighborhood<- options$neighborhoodFunction()
   f.temp<- options$getTemperatureF()
 
@@ -910,7 +986,7 @@ abm.saa<- function(objective, options= NULL) {
   S<- sortSolution(s, f)
   bestS<- S
 
-  elog.info("Starting partial search")
+  elog.info("Starting metaheuristic")
   for(iteration in 1:iterations) {
 
     ## --- Calculate the current temperature
@@ -918,9 +994,12 @@ abm.saa<- function(objective, options= NULL) {
     S<- bestS
     for(l in 1:L) {
       ## Evaluate a neighbor of s
-      s1<- f.neighborhood(objective,getSolution(S),0.05)
+      s1<- f.neighborhood(objective,getSolution(S),0.01)
       f1<- objective$EvalFitness(s1)
       S1<- sortSolution(s1, f1)
+
+      ## --- Saving visited solution points
+      estimates$addVisitedSpace(S1)
 
       ## --- New solution is beter than the previous one
       if(bestFitness(S1) < bestFitness(S)) {
@@ -941,7 +1020,7 @@ abm.saa<- function(objective, options= NULL) {
     elog.info("Iteration=%d/%d, best fitness=%g, iteration best fitness=%g", iteration, iterations, bestFitness(bestS), bestFitness(S))
 
     ## --- Storing the best of this iteration
-    estimates$addPartialBest(iteration, S)
+    estimates$addIterationBest(iteration, S1[1,])
 
     if(t <= TMIN) break;
     if(objective$isConverged(bestFitness(bestS))) break
@@ -972,8 +1051,8 @@ saa.neighborhood<- function(f, S, d, n) {
     k<- colnames(S)[i]
     distance<- f.range(k) * d
     #newS[,i]<- newS[,i] + runif(1,as.numeric(f$getParameterValue(k,"min")),as.numeric(f$getParameterValue(k,"max"))) * distance
-    newS[,i]<- newS[,i] + runif(1,-1,1) * distance
-    #####>newS[,i]<- newS[,i] + 0.01 * f.range(k) * rnorm(1)
+    #>>newS[,i]<- newS[,i] + runif(1,-1,1) * distance
+    newS[,i]<- newS[,i] + 0.01 * f.range(k) * stats::rnorm(1)
     #newS[,i]<- newS[,i] + .01 * f.range(k) * runif(1,0,1)
   }
   enforceBounds(as.data.frame(newS), f$parameters)
@@ -1129,7 +1208,7 @@ abm.acor<- function(objective, options= NULL) {
   C<- objective$EvalFitness(S)
   T<- acor.archive(S, C, W, k)
 
-  elog.info("Starting search")
+  elog.info("Starting metaheuristic")
   for(index in 1:iterations) {
     s.s<- acor.S(T)
     s.sd<- acor.sigma(Xi, k, T)
@@ -1145,7 +1224,9 @@ abm.acor<- function(objective, options= NULL) {
     elog.info("Iteration=%d/%d, best fitness=%g, iteration best fitness=%g", index, iterations, T[1, "fitness"], (sortSolution(S, C))[1,"fitness"])
 
     ## --- Storing the best of this iteration
-    estimates$addPartialBest(index, T[1,])
+    estimates$addIterationBest(index, sortSolution(S,C)[1,])
+
+    estimates$addVisitedSpace(sortSolution(S,C))
 
     ## Check for algorithm convergence
     if(objective$isConverged(T[1, "fitness"])) break
@@ -1378,76 +1459,72 @@ acor.N<- function(T) {
 
 ## ##################################################################
 ##
-## --- Simulated Dilution Approximation -
+## --- EvoPER Evolutionary Strategy 1
 ##
 ## ##################################################################
 
-
-#' @title Simulated Dilution Approximation
+#' @title EvoPER Evolutionary Strategy 1
 #'
-#' @description This function tries to provide a better approximation to the
-#' best solution when no information is available on the correct range of
-#' input parameters for the objective function. Basically the function search
-#' for the best cost n replications and adjust the range based on that value
-#' of best particles and a 10^-1 of initially provided range.
+#' @description This function tries to provide a rough approximation to
+#' best solution when no information is available for the correct range
+#' of input parameters for the objective function. It can useful for
+#' studying the behavior of individual-based models with high
+#' variability in the output variables showing nonlinear behaviors.
 #'
 #' @param objective An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
 #' @param options An apropiate instance from a sublclass of \link{Options} class
 #'
 #' @export
-abm.sda<- function(objective, options= NULL) {
+abm.ees1<- function(objective, options= NULL) {
   ## Handling the heuristic specific options
-  options<- OptionsFactory("sda", options)
+  options<- OptionsFactory("ees1", options)
+  elog.info("Options(%s): %s", options$getType(), options$toString())
 
   ## --- Creating the estimation object for returning results
   estimates<- Estimates$new()
 
+  ## --- Metaheuristic options
   k<- objective$ParametersSize()
-
-  n<- options$getValue("n")                   ## Solution size
-  mu<- options$getValue("mu")                 ## shaking ratio
-  kkappa<- options$getValue("kkappa")         ## Dilution factor
   iterations<- options$getValue("iterations")
+  N<- options$getValue("N")
+  mu<- options$getValue("mu")                 ##
+  kkappa<- options$getValue("kkappa")         ##
 
-  ## --- Initialize the solution
+  #iterations<- 100
+  N<- 6
+
   elog.info("Initializing solution")
-  s<- initSolution(objective$parameters, 2*n, "lhs")
+  s<- initSolution(objective$parameters, N, "lhs")
+  #s<- ees1.challenge(s,2)
 
-  delta<- c(10,10,10,1)
-  names(delta)<- names(s)[1:4]
-  ##delta<- as.data.frame(delta)
-  print(delta)
+  ## -- Evaluate
+  s0<- es.evaluate(objective, s)
 
-  s<- sda.roundsolution(s, kkappa, objective)
-  c<- objective$EvalFitness(s)
-  s1<- s0<- sda.solution(s, c)
-  s1[,"fitness"]<- Inf
+  elog.info("Starting metaheuristic")
+  for(iteration in 1:iterations) {
+    mates<- ees1.mating1(getSolution(s0), mu)
+    s<- ees1.recombination(s0, mates)
+    s<- ees1.mutation(s, mates)
+    #s<- ees1.challenge(s,2)
 
+    ## --- Evaluate solution
+    s1<- es.evaluate(objective, getSolution(s))
 
+    ## --- Selection
+    s0<- ees1.selection(s0, s1, kkappa)
 
-  for(index in 1:iterations) {
-    s<- s0[,1:k]
-    elog.info("Iteration=%d/%d, fitness=%g, iteration fitness=%g", index, iterations, s0[1,"fitness"], s1[1,"fitness"])
-
-    p<- sda.selectparents(2*n)
-    s<- sda.recombination(s, p)
-    s<- sda.mutate(s, 0.9 * ((iterations+1-index)/iterations), delta)
-
-    s<- enforceBounds(s, objective$parameters)
-    s<- sda.roundsolution(s, kkappa, objective)
-
-    c<- objective$EvalFitness(s)
-    s1<- sda.solution(s,c)
-
-    elog.debug("iteration best [%g]",s1[1,"fitness"])
-    s0<- as.data.frame(rbind(s0,s1))
-
-    s0<- s0[with(s0,order(fitness)),]
-
-    print(s0[1:10,])
+    #if(runif(1) < 0.2) {
+    # elog.info("Challenging current solution set")
+    #  s0<- es.evaluate(objective, getSolution(s0))
+    #}
 
     ## --- Storing the best of this iteration
-    estimates$addPartialBest(index, s1[1,])
+    estimates$addIterationBest(iteration, s1[1,])
+
+    ## --- Save the complete visited space
+    estimates$addVisitedSpace(s1)
+
+    elog.info("Iteration=%d/%d, fitness=%g, iteration fitness=%g", iteration, iterations, s0[1,"fitness"], s1[1,"fitness"])
 
     ## Check for algorithm convergence
     if(objective$isConverged(s0[1, "fitness"])) break
@@ -1457,37 +1534,40 @@ abm.sda<- function(objective, options= NULL) {
   estimates
 }
 
-#' @title sda.solution
+#' @title es.evaluate
 #'
-#' @description Sort solutions by its cost
+#' @description For each element in solution 's' evaluate the respective
+#' fitness.
 #'
-#' @param s Problem solution
-#' @param f The function evaluation for s
+#' @param f A reference to an instance of objective function
+#' @param s The set of solutions
+#' @param enforce If true the values are enforced to fall within provided range
 #'
+#' @return The solution ordered by its fitness.
 #' @export
-sda.solution<- function(s, f) {
-  solution<- cbind(s,f[,c("pset","fitness")])
-  as.data.frame(solution[with(solution,order(fitness)),])
+es.evaluate<- function(f, s, enforce=TRUE) {
+  if(enforce) {
+    s<- enforceBounds(s, f$parameters)
+  }
+  c<- f$EvalFitness(s)
+  sortSolution(s, c)
 }
 
-
-#' @title sda.shaking1
+#' @title ees1.mating
 #'
 #' @description This function 'mix' the elements present in the solution. The
 #' parameter 'mu' controls the intensity of mixing. Low values give preference
-#' to best solutions and high values make the values being select randomly.
+#' to best solution components and high values make the values being select randomly.
 #'
-#' @param s The Problem solution
-#' @param f The function evaluation for s
-#' @param mu The mixing intensity ratio, from 0 to 1. The shaking intensity
-#' controls de the probability of chosing a 'heavier' values.
+#' @param solution The Problem solution
+#' @param mu The mixing intensity ratio, from 0 to 1. The mix intensity
+#' controls de the probability of chosing a worst solutions
 #'
 #' @export
-sda.shaking1<- function(s, f, mu) {
+ees1.mating<- function(solution, mu) {
   P<- function(p, x) { (p^x) }
-  k<- length(s[,1])
-  solution<- sda.solution(s, f)
-  p<- c( rep(1,(k/2)), P(mu,((k/2)+1):k) )
+  k<- length(solution[,1])
+  p<- c( P(mu,1:k ) )
 
   sampling<- c()
   indexes<- 1:k
@@ -1506,177 +1586,234 @@ sda.shaking1<- function(s, f, mu) {
   solution[sampling,]
 }
 
-#' @title sda.shaking2
+#' @title ees1.mating1
 #'
 #' @description This function 'mix' the elements present in the solution. The
 #' parameter 'mu' controls the intensity of mixing. Low values give preference
-#' to best solutions and high values make the values being select randomly.
+#' to best solution components and high values make the values being select randomly.
 #'
-#' @param s The Problem solution
-#' @param f The function evaluation for s
-#' @param mu The mixing intensity ratio, from 0 to 1. The shaking intensity
-#' controls de the probability of chosing a 'heavier' values.
+#' @param solution The Problem solution
+#' @param mu The mixing intensity ratio, from 0 to 1. The mix intensity
+#' controls de the probability of chosing a worst solutions
 #'
 #' @export
-sda.shaking2<- function(s, f, mu) {
+ees1.mating1<- function(solution, mu) {
   P<- function(p, x) { (p^x) }
-  k<- length(s[,1])
-  solution<- sda.solution(s, f)
-  p<- c( rep(1,(k/2)), P(mu,((k/2)+1):k) )
+  k<- length(solution[,1])
+  #p<- c( rep(1,(k/2)), P(mu,((k/2)+1):k) )
+  p<- c( P(mu,1:k ) )
 
   solution[sample(1:k, size = (k/2), prob = p),]
 }
 
-#' @title sda.solute
+#' @title ees1.recombination
 #'
-#' @description This function mimics the pipetting a solute
-#' for multiplicatively diluting it in a new solution. Basically,
-#' it is calculating the geometric mean of problem parameters in
-#' the mixed solute.
+#' @description Performs the recombination on solution
 #'
-#' @param mix The solution mix
-#'
-#' @return The 'solute' The geometric mean of mix columns
-#' @export
-sda.solute<- function(mix) {
-  n<- length(mix[1,])
-  apply(mix[,1:n],2,gm.mean)
-}
-
-#' @export
-sda.delta<- function(rrange, kkappa) {
-  round(rrange*kkappa)
-}
-
-#' @export
-sda.trunc<- function(v, rrange, kkappa) {
-  delta<- sda.delta(rrange, kkappa)
-  trunc(v/delta) * delta
-}
-
-#' @export
-sda.roundsolution<- function(s, kkappa, objective) {
-  for(k in colnames(s)) {
-    s[k]<- sda.trunc(s[k],objective$getParameterRange(k),kkappa)
-  }
-  s[s == 0]<- 1
-  s
-}
-
-#' @export
-sda.mutate<- function(s, rho, delta) {
-  for(k in colnames(s)) {
-    if(runif(1) < rho) {
-      values<- seq(-2*delta[k],2*delta[k],delta[k])
-      values[-c(which(values == 0))]
-      s[k]<- s[k] + sample(values, length(s[k]))
-    }
-  }
-  s
-}
-
-#' @export
-sda.selectparents<- function(k) {
-  ##P<- function(p, x) { (p*1/2^x) }
-  P<- function(p, x) { (p*1/x^2) }
-  w<- c( rep(1,(k/2)), P(0.5,((k/2)+1):k) )
-
-  sampling<- c()
-  indexes<- 1:k
-
-  ## Repeat until sampling have the right size
-  while(length(sampling) < (k/2)) {
-    for(i in 1:length(indexes)) {
-      if(runif(1) < (1/k * w[i])) {
-        sampling<- c(sampling, indexes[i])
-        indexes<- indexes[-c(i)]
-        w<- w[-c(i)]
-        break
-      }
-    }
-  }
-  print(sampling)
-  matrix(sampling,ncol = 2,byrow = TRUE)
-}
-
-#' @export
-sda.recombination<- function(s, p) {
-  r<- c()
-  for(i in 1:length(p[,1])) {
-    #print(i)
-    r<- rbind(r, sda.recombinepair(s[p[i,1],], s[p[i,2],]))
-  }
-  as.data.frame(r)
-}
-
-#' @export
-sda.recombinepair<- function(p1, p2) {
-  assert(all.equal(colnames(p1),colnames(p2)),"Incompatible parents")
-  offspring<- p1
-  for(k in colnames(p1)) {
-    if(runif(1) < 0.5) {
-      offspring[k]<- p2[k]
-    }
-  }
-  offspring
-}
-
-#' @title sda.mixing
-#'
-#' @description Mix solute
-#'
-#' @param s The Problem solution
-#' @param f The function evaluation for s
-#' @param solute The solute generated with sda.solute.
-#' @param kkappa The dilution factor
+#' @param solution The Problem solution
+#' @param mates The mixed parents
 #'
 #' @export
-sda.mixing<- function(s, f, solute, kkappa, objective) {
-  randomize<- function(x, kkappa) { stats::rnorm(1, x, exp(abs(x * kkappa))) }
-  m<- length(s[,1])
-  n<- length(s[1,])
+ees1.recombination<- function(solution, mates) {
+  m<- length(solution[,1])
+  n<- length(solution[1,])
 
-  solution<- sda.solution(s,f)
+  solute<- apply(getSolution(mates),2,gm.mean)
+
   summatory<- sum(solution[,"fitness"])
 
+  ssi<- getSolution(solution)
   stock<- c()
   for(i in 1:m) {
-    si<- matrix(s[i,],1,n)
-    weight<- solution[i,"fitness"]/summatory
+    si<- ssi[i,]
+
+    fitness<- solution[i,"fitness"]
+    weight<- fitness/summatory
+
     if(runif(1) < 1/5) {
-      stock<- rbind(stock, apply(rbind(sda.mutate(si,kkappa,1, objective), solute * weight),2,mean) )
+      #stock<- rbind(stock, apply(rbind(si + si * runif(n,-1, 1), solute * weight),2,mean) )
+      stock<- rbind(stock, apply(rbind(si, (si + solute) * weight),2,mean) )
+      #stock<- rbind(stock, apply(rbind(si, si +solute),2,mean) )
     } else {
-      #stock<- rbind(stock,sda.mutate(si,kkappa, 1/n, objective))
-      stock<- rbind(stock, apply(rbind(sda.mutate(si,kkappa,1, objective), solute * weight),2,mean) )
+      stock<- rbind(stock, apply(rbind(si, solute),2,mean) )
+      #stock<- rbind(stock,ees1.explore(si,fitness))
     }
   }
-  print(stock)
-  as.data.frame(stock)
+  as.data.frame(cbind(stock,fitness=getFitness(solution)))
 }
 
-#' @title sda.dilute
+#' @title ees1.mutation
 #'
-#' @description Dilute the old solute in the new solution
+#' @description Performs the mutation on generated solution
 #'
-#' @param s0 The old solution
-#' @param s1 The new solution
-#' @param kkappa The dilution factor
+#' @param solution The Problem solution
+#' @param mates The mixed parents
 #'
 #' @export
-sda.dilute<- function(s0, s1, kkappa) {
+ees1.mutation<- function(solution, mates) {
+  m<- length(solution[,1])
+  n<- length(solution[1,])
+  s<- getSolution(solution)
+  for(i in 1:m) {
+    s[i,]<- ees1.explore(s[i,],getFitness(solution, i))
+  }
+  s
+}
+
+#' @title ees1.challenge
+#'
+#' @description Repeat the evalution of best solution to tacke with
+#' variability.
+#'
+#' @param solution The Problem solution
+#' @param objective The objective function
+#'
+#' @export
+ees1.challenge<- function(solution, objective) {
+  s<- getSolution(solution)
+  ss0<- s + .Machine$double.eps^0.5
+  solution1<- es.evaluate(objective, ss0)
+  s0<- solution[with(solution,order(pset)),]
+  s1<- solution1[with(solution1,order(pset)),]
+  for(i in 1:length(s0[,1])) {
+    if(getFitness(s1, i) > getFitness(s0, i)) {
+      s0[i,]<- s1[i,]
+    }
+  }
+  s0
+}
+
+#' @title ees1.explore
+#'
+#' @description Explore the solution space on the neighborhood of
+#' solution 's' in order to find a new best.
+#'
+#' @param s The Problem solution
+#' @param weight The exploration intensity
+#'
+#' @export
+ees1.explore<- function(s, weight) {
+  m<- length(s[,1])
+  n<- length(s[1,])
+  w<- Magnitude(weight)
+  w<- ifelse(w < 0, 1/abs(w), 1)
+
+  for(i in 1:m) {
+    for(j in 1:n) {
+      mm<- Magnitude(s[i,j])
+      e<- ifelse(mm < 0, 0, mm)
+      s[i,j]<- s[i,j] + runif(1,-10^e,10^e) * w
+    }
+  }
+  s
+}
+
+#' @title ees.selection
+#'
+#' @description Select the elements with best fitness but accept uphill
+#' moves with probability 'kkappa'.
+#'
+#' @param s0 The current best solution set
+#' @param s1 The new solution
+#' @param kkappa The selection pressure
+#'
+#' @export
+ees1.selection<- function(s0, s1, kkappa) {
   assert(length(s0[1,]) == length(s1[1,]),"Invalid solution!")
-  k<- length(s0[,1])
-  for(i in 1:k) {
-    ##print(sprintf("[i=%g] f0=%g, f1=%g", i, s0[i,"fitness"], s1[i,"fitness"]))
-    if(s1[i,"fitness"]< s0[i,"fitness"]) {
-        s0[i,]<- s1[i,]
-    } else {
-      if(i > 1 && runif(1) < 1/5) {
-        s0[i,]<- s1[i,]
+  k<- length(getSolution(s0)[1,]) - 1
+  m<- ifelse(length(s0[,1]) < length(s1[,1]), length(s0[,1]), length(s1[,1]))
+
+  for(i in 1:m) {
+    for(j in i:m) {
+      if(s1[j,"fitness"] < s0[i,"fitness"]) {
+        s0[i,]<- s1[j,]
+        break
+      } else {
+        if(i > k && runif(1) < kkappa) {
+          s0[i,]<- s1[j,]
+        }
       }
     }
   }
   s0
+}
+
+## ##################################################################
+##
+## --- EvoPER Evolutionary Strategy 2
+##
+## ##################################################################
+
+#' @title EvoPER Evolutionary Strategy 2
+#'
+#' @description This function tries to provide a rough approximation to
+#' best solution when no information is available for the correct range
+#' of input parameters for the objective function. It can useful for
+#' studying the behavior of individual-based models with high
+#' variability in the output variables showing nonlinear behaviors.
+#'
+#' @param objective An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
+#' @param options An apropiate instance from a sublclass of \link{Options} class
+#'
+#' @export
+abm.ees2<- function(objective, options= NULL) {
+  ## Handling the heuristic specific options
+  options<- OptionsFactory("ees2", options)
+  elog.info("Options(%s): %s", options$getType(), options$toString())
+
+  ## --- Creating the estimation object for returning results
+  estimates<- Estimates$new()
+
+  ## --- Metaheuristic options
+  N<- options$getValue("N")
+  iterations<- options$getValue("iterations")
+
+  elog.info("Initializing solution")
+  parameters<- objective$getParameters()
+  s<- initSolution(parameters, N, "lhs")
+
+  ## -- Evaluate
+  s0<- es.evaluate(objective, s)
+
+  elog.info("Starting metaheuristic")
+  for(iteration in 1:(iterations-1)) {
+    s<- data.frame(getSolution(s0)[1:5,], stringsAsFactors=FALSE)
+    mmin<- apply(s,2,min)
+    mmax<- apply(s,2,max)
+    mmean<- apply(s,2,mean)
+    ssd<- apply(s,2,sd)
+    interval<-  abs(mmax-mmin)/2
+
+    for(k in parameters$name) {
+      parameters[which(parameters$name == k),"min"]<- as.numeric((mmean-interval-runif(1))[k])
+      parameters[which(parameters$name == k),"max"]<- as.numeric((mmean+interval+runif(1))[k])
+    }
+
+
+
+    s<- initSolution(parameters, N, "lhs")
+
+    ## -- Evaluate
+    s1<- es.evaluate(objective, s)
+
+    ## -- Save the best iteration value
+    estimates$addIterationBest(iteration, s1[iteration,])
+
+    s0<- rbind(s0,s1)
+    s0<- s0[with(s0,order(fitness)),]
+
+    elog.info("Iteration=%d/%d, fitness=%g, iteration fitness=%g", iteration, iterations, s0[1,"fitness"], s1[1,"fitness"])
+
+  }
+
+  ## -- Saving the whole solution space
+  estimates$addVisitedSpace(s0)
+  #for(i in 1:length(s0[,1])) {
+    #estimates$addVisitedSpace(s0[i,])
+  #}
+
+  estimates$setBest(s0[1,])
+  estimates
 }
 
 
@@ -1695,22 +1832,61 @@ sda.dilute<- function(s0, s1, kkappa) {
 #'
 #' @param parameters The Objective Function parameter list
 #' @param N The size of Solution population
-#' @param sampling The population sampling scheme (random|lhs)
+#' @param sampling The population sampling scheme (mcs|lhs|ffs)
 #'
 #' @return A random set of solutions
 #'
 #' @importFrom rrepast AoE.RandomSampling AoE.LatinHypercube
 #' @export
-initSolution<- function(parameters, N=20, sampling="random") {
+initSolution<- function(parameters, N=20, sampling="mcs") {
   switch(sampling,
     lhs={
       rrepast::AoE.LatinHypercube(N,parameters)
     },
 
-    {
+    mcs={
       rrepast::AoE.RandomSampling(N,parameters)
+    },
+
+    ffs={
+      rrepast::AoE.FullFactorial(N,parameters)
     }
   )
+}
+
+#' @title partSolutionSpace
+#'
+#' @description Creates the initial Solution population
+#' taking into account the lower an upper bounds of
+#' provided experiment factors. This method works by
+#' dividing the solution space into partitions of size 'd'
+#' and then creating a full factorial combination of partitions.
+#'
+#' @param parameters The Objective Function parameter list
+#' @param d The partition size. Default value 4.
+#'
+#' @return A set of solutions
+#'
+#' @export
+partSolutionSpace<- function(parameters, d=4) {
+  i<- 1
+  m<- list()
+  keys<- c()
+
+  for(k in 1:length(parameters[,1])) {
+    keys<- c(keys,p<- parameters[k, "name"])
+    p<- parameters[k, ]
+    mmin<- as.numeric(p$min)
+    mmax<- as.numeric(p$max)
+    step<- ceiling((mmax-mmin) / d)
+    print(sprintf("a=%g, b=%g, c=%g", mmin+step/(d/2), mmax, ceiling((mmax-mmin) / d) ))
+    s<- seq(mmin+step/(d/2), mmax, ceiling((mmax-mmin) / d) )
+    m[i] <- list(round(s))
+    i<- i + 1
+  }
+  g<- expand.grid(m)
+  names(g)<-  keys
+  g
 }
 
 #' @title sortSolution
@@ -1740,21 +1916,55 @@ bestFitness<- function(S) {
   S[1,"fitness"]
 }
 
-#' @title getSolution
+#' @title getFitness
 #'
 #' @description Given a set S of N solutions created with sortSolution, this function
 #' returns the solution component fot the best solution.
 #'
 #' @param S The solution set
+#' @param i The fitness index, if null return the whole column.
 #'
-#' @return The best solution values
+#' @return The selected fitness entry
+#'
+#' @export
+getFitness<- function(S, i=NULL) {
+  v<- S[,"fitness"]
+  if(!is.null(i)) {
+    v<- S[i,"fitness"]
+  }
+  v
+}
+
+#' @title bestSolution
+#'
+#' @description Given a set S of N solutions created with sortSolution, this function
+#' returns the best solution found.
+#'
+#' @param S The solution set
+#'
+#' @return The best solution
+#'
+#' @export
+bestSolution<- function(S) {
+  S[,c("pset","fitness")]<- list(NULL)
+  S[1,]
+}
+
+#' @title getSolution
+#'
+#' @description Given a set S of N solutions created with sortSolution, this function
+#' returns the solution component. A solutions is a set of solutions and their associated
+#' fitness
+#'
+#' @param S The solution set
+#'
+#' @return The solution set
 #'
 #' @export
 getSolution<- function(S) {
   S[,c("pset","fitness")]<- list(NULL)
   S
 }
-
 
 #' @title lowerBound
 #'
@@ -1979,8 +2189,9 @@ OptionsFactory<- function(type, v=NULL) {
     switch(type,
       pso = { v<- OptionsPSO$new() },
       saa = { v<- OptionsSAA$new() },
-      sda = { v<- OptionsSDA$new() },
       acor= { v<- OptionsACOR$new() },
+      ees1= { v<- OptionsEES1$new() },
+      ees2= { v<- OptionsEES2$new() },
       { stop("Invalid optimization function!") }
     )
   }
@@ -1999,9 +2210,187 @@ OptionsFactory<- function(type, v=NULL) {
 #'
 #' @export
 Magnitude<- function(v) {
-  trunc(log(v,10))
+  if(v == 0) {
+    m<- 0
+  } else {
+    m<- trunc(log(abs(v),10))
+  }
+  ## Maybe a R bug
+  m<- ifelse(m == -0, 0, m)
+  m
 }
 
+#' @title xmeanci1
+#'
+#' @description Calculates confidence interval of mean for provided
+#' data with desired confidence level. This functions uses bootstrap
+#' resampling scheme for estimanting the CI.
+#'
+#' @param x The data set for which CI will be calculated
+#' @param alpha The confidence level. The default value is 0.95 (95\%)
+#'
+#' @return The confidence interval for the mean calculated using 'boot.ci'
+#'
+#' @importFrom boot boot boot.ci
+#' @importFrom stats sd
+#' @export
+xmeanci1<- function(x, alpha=0.95) {
+  f<- function(x,i) { c( mean(x[i]), (sd(x[i])/sqrt(length(x[i])))^2 ) }
+
+  b<- boot(x, f, R = 1000)
+  boot.ci(b, conf = alpha, type = c("norm", "basic", "perc", "stud", "bca"))
+}
+
+#' @title xmeanci2
+#'
+#' @description Calculates confidence interval of mean for provided
+#' data with desired confidence level.
+#'
+#' @param x The data set for which CI will be calculated
+#' @param alpha The confidence level. The default value is 0.95 (95\%)
+#'
+#' @return The confidence interval for the mean
+#' @importFrom stats sd qt
+#' @export
+xmeanci2<- function(x, alpha=0.95) {
+  n<- length(x)
+  avg<- mean(x)
+  se<- sd(x)/sqrt(n);
+  e<- se * qt(1-((1-alpha)/2), df=(n-1))
+  c(avg-e, avg+e)
+}
+
+
+#' @title fixdfcolumns
+#'
+#' @description Coerce dataframe columns to a specic type.
+#'
+#' @param df The data frame.
+#' @param cols The dataframe columns to be skiped or included.
+#' @param skip If TRUE the column names in 'cols' are skiped. When FALSE logic is inverted.
+#' @param type The type for which data frame columns must be converted.
+#'
+#' @return The data frame with converted column types.
+#'
+#' @export
+fixdfcolumns<- function(df, cols= c(), skip=TRUE, type=as.numeric) {
+  df<- as.data.frame(df)
+  assert(is.data.frame(df),"Invalid data")
+  df<- df[,!(names(df) %in% c("V1"))]
+
+  for(k in names(df)) {
+    if(skip) {
+      if(k %in% cols) next
+    } else {
+      if(!k %in% cols) next
+    }
+    df[,k]<- type(df[,k])
+  }
+  df
+}
+
+
+#' @title xyplothelper
+#'
+#' @description Simple helper for ploting xy dispersion points.
+#'
+#' @param d A data frame.
+#' @param x A string with the dataframe column name for x axis
+#' @param y A string with the dataframe column name for y axis
+#' @param title The plot title
+#'
+#' @return A ggplot2 plot object
+#'
+#' @importFrom ggplot2 aes_string labs geom_point ggtitle theme element_text
+#' @export
+xyplothelper<- function(d, x, y, title=NULL) {
+  d<- as.data.frame(d)
+  d<- fixdfcolumns(d,cols = c(x,y),skip = FALSE)
+
+  p<- ggplot(d, with(d,aes_string(x = x, y = y)))
+  p<- p + labs(y = y)
+  p<- p + labs(x = x)
+  p<- p + geom_point(size = 1.5)
+  if(!is.null(title)) {
+    p<- p + ggtitle(title) + theme(plot.title = element_text(hjust = 0.5))
+  }
+  p
+}
+
+#' @title histplothelper
+#'
+#' @description Simple helper for ploting histograms
+#'
+#' @param d A data frame.
+#' @param x A string with the dataframe column name for histogram
+#' @param title The plot title
+#'
+#' @return A ggplot2 plot object
+#' @importFrom ggplot2 ggplot aes_string geom_histogram ggtitle theme element_text
+#' @export
+histplothelper<- function(d, x, title=NULL) {
+  d<- as.data.frame(d)
+  d<- fixdfcolumns(d,cols = c(x),skip = FALSE)
+
+
+  p<- ggplot(d, aes_string(x=x))
+  p<- p + geom_histogram(aes_string(y="..ncount.."), bins = 4, colour="black", fill="orange")
+  if(!is.null(title)) {
+    p<- p + ggtitle(title) + theme(plot.title = element_text(hjust = 0.5))
+  }
+  p
+}
+
+#' @title scatterplotlothelper
+#'
+#' @description Simple helper for ploting 3d scaterplots
+#'
+#' @param d A data frame.
+#' @param x A string with the dataframe column name for x axis
+#' @param y A string with the dataframe column name for y axis
+#' @param z A string with the dataframe column name for z axis
+#' @param title The plot title
+#'
+#' @return A scatter3D plot
+#' @import plot3D
+#' @export
+scatterplotlothelper<- function(d, x, y, z, title=NULL) {
+  d<- as.data.frame(d)
+  d<- fixdfcolumns(d,cols = c(x, y, z),skip = FALSE)
+  p<- scatter3D(x=d[,x],y=d[,y],z=d[,z],main=title,phi= 0,  bty = "g", pch = 20, cex = 1.5, ticktype = "simple", xlab=x, ylab=y,zlab=z)
+  p
+}
+
+
+#' @title contourplothelper
+#'
+#' @description Simple helper for ploting histograms
+#'
+#' @param d A data frame.
+#' @param x A string with the dataframe column name for x axis
+#' @param y A string with the dataframe column name for y axis
+#' @param z A string with the dataframe column name for z axis
+#'
+#' @importFrom ggplot2 ggplot aes_string geom_density2d stat_density2d stat_contour
+#' @importFrom ggplot2 ggtitle theme element_text scale_fill_gradient facet_wrap stat_summary2d
+#' @importFrom ggplot2 stat_summary_2d scale_alpha facet_grid xlim ylim
+#' @export
+contourplothelper<- function(d, x, y, z) {
+  d<- as.data.frame(d)
+  d<- fixdfcolumns(d,cols = c(x, y, z),skip = FALSE)
+
+  ## --- Pruning duplicated entries
+  d<- d[!duplicated(d[,c(x,y)]),]
+  d<- d[!duplicated(d[,c(z)]),]
+
+  d$title<- sprintf("solution landscape for %s ~ %s, %s", z, x, y)
+  p<- with(d,ggplot(d, aes_string(x=x, y=y, z=z)))
+  p<- p + stat_density2d(data = d, aes_string(fill = "..level..", alpha = "..level.."), size = 0.01, bins = 8, geom = 'polygon', n = 300)
+  p<- p + scale_fill_gradient(low = "green", high = "red")
+  p<- p + scale_alpha(range = c(0.15, 0.30), guide = FALSE)
+  p<- p + facet_grid(. ~ title) + theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
+  p
+}
 
 ## ##################################################################
 ##
@@ -2058,6 +2447,53 @@ f0.rosenbrock2<- function(x1, x2) { (1 - x1)^2 + 100 * (x2 - x1^2)^2 }
 #'
 #' @export
 f1.rosenbrock2<- function(x) { f0.rosenbrock2(x[1], x[2]) }
+
+#' @title f0.adtn.rosenbrock2
+#'
+#' @description Two variable Rosenbrock function with random additive noise.
+#'
+#' @param x1 Parameter 1
+#' @param x2 Parameter 2
+#'
+#' @export
+f0.adtn.rosenbrock2<- function(x1, x2) { (1 - x1)^2 + 100 * (x2 - x1^2)^2 + runif(1,0,0.5)}
+
+#' @title f1.adtn.rosenbrock2
+#'
+#' @description Two variable Rosenbrock function with random additive noise.
+#'
+#' @param x Parameter vector
+#'
+#' @export
+f1.adtn.rosenbrock2<- function(x) { f0.adtn.rosenbrock2(x[1], x[2]) }
+
+
+#' @title f0.nlnn.rosenbrock2
+#'
+#' @description Two variable Rosenbrock function with random additive noise.
+#'
+#' @param x1 Parameter 1
+#' @param x2 Parameter 2
+#'
+#' @export
+f0.nlnn.rosenbrock2<- function(x1, x2) {
+  v<- (1 - x1)^2 + 100 * (x2 - x1^2)^2 + runif(1,0,0.5)
+  if(runif(1) < 0.5) {
+    v<- v * stats::rnorm(1,1,0.1)
+  } else {
+    v<- v + stats::rnorm(1,v,v * 0.1)
+  }
+  v
+}
+
+#' @title f1.nlnn.rosenbrock2
+#'
+#' @description Two variable Rosenbrock function with random additive noise.
+#'
+#' @param x Parameter vector
+#'
+#' @export
+f1.nlnn.rosenbrock2<- function(x) { f0.nlnn.rosenbrock2(x[1], x[2]) }
 
 #' @title predatorprey
 #'

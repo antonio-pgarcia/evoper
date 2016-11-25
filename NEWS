@@ -10,15 +10,64 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Estimates class for returning results of extremize function
 - OptionsACOR class for ACOr Options
-- abm.ACOR Implementation of ACO for continuous domains
+- abm.acor Implementation of ACO for continuous domains
+- abm.ees1 EvoPER Implementation of simple ES
 - OptionsFactory Creates an instance of Options class
-- naiveperiod Search for period in a serie of data
+- naiveperiod Search for period in data
 - gm.mean Calculate the geometric mean
-- gm.sd Calculates the geometric standard deviation
+- elog.level Wrapper (futile.logger) for getting/setting log level
+- elog.error Wrapper (futile.logger) for logging error messages
+- elog.info  Wrapper (futile.logger) for logging info messages
+- elog.debug Wrapper (futile.logger) for logging debug messages
+- acor.updateants ACO internal function
+- acor.weigth ACO internal function
+- acor.probabilities ACO internal function
+- acor.lthgaussian ACO internal function
+- acor.sigma ACO internal function
+- acor.archive ACO internal function
+- acor.S ACO internal function
+- acor.F ACO internal function
+- acor.W ACO internal function
+- acor.N ACO internal function
+- es.evaluate General ES function for evaluating a solution
+- ees1.mating EES1 internal function
+- ees1.mating1 EES1 internal function
+- ees1.recombination EES1 internal function
+- ees1.mutation EES1 internal function
+- ees1.challenge EES1 internal function
+- ees1.explore EES1 internal function
+- ees1.selection EES1 internal function
+- abm.ees2 EvoPER Implementation of simple ES
+- partSolutionSpace Support function for implementing evolutionary strategies
+- sortSolution Support function for implementing evolutionary strategies
+- bestFitness Support function for implementing evolutionary strategies
+- getFitness Support function for implementing evolutionary strategies
+- bestSolution Support function for implementing evolutionary strategies
+- getSolution Support function for implementing evolutionary strategies
+- slopes Calculate the slope between poins for a time series
+- slope Calculate the slope between poins for a time series
+- gm.mean Calculate geometric mean
+- naiveperiod Calculate the period for a time series
+- Magnitude Returns the magnitude for a given number
+- xmeanci1 Calculates the confidence interval using resampling
+- xmeanci2 Calculates the confidence interval
+- fixdfcolumns Convert data frame columns to a type
+- xyplothelper Generate a xy plot
+- histplothelper Generate a histogram plot
+- scatterplotlothelper Generate a scatter plot
+- contourplothelper Generate a surface plot
+- f0.adtn.rosenbrock2 Examples, rosenbrock with noise
+- f1.adtn.rosenbrock2 Examples, rosenbrock with noise
+- f0.nlnn.rosenbrock2 Examples, rosenbrock with noise
+- f1.nlnn.rosenbrock2 Examples, rosenbrock with noise
+- predatorprey Examples, predator-prey ODE
+- predatorprey.plot Examples, plot results of predator-prey
+- f0.periodtuningpp Examples, period tuning of predator-prey
+
 
 ### Changed
 - extremize now returns an instance of Estimates class
-- initSolution now the sampling scheme can be random or latin hypercubes
+- initSolution now accepts multiple sampling schemes
 
 ### Fixed
 
