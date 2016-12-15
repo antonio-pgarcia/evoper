@@ -602,7 +602,8 @@ OptionsEES2<- setRefClass("OptionsEES2", contains = "Options",
     initialize = function() {
       callSuper()
       setType("ees2")
-      setValue("N", 100)            ## Solution size
+      setValue("N", 100)           ## Solution size
+      setValue("rho", 0.05)        ## Solution size
       setValue("iterations", 10)   ## Total number of iterations
     }
   )
@@ -1051,8 +1052,8 @@ saa.neighborhood<- function(f, S, d, n) {
     k<- colnames(S)[i]
     distance<- f.range(k) * d
     #newS[,i]<- newS[,i] + runif(1,as.numeric(f$getParameterValue(k,"min")),as.numeric(f$getParameterValue(k,"max"))) * distance
-    #>>newS[,i]<- newS[,i] + runif(1,-1,1) * distance
-    newS[,i]<- newS[,i] + 0.01 * f.range(k) * stats::rnorm(1)
+    newS[,i]<- newS[,i] + runif(1,-1,1) * distance
+    #>>newS[,i]<- newS[,i] + 0.01 * f.range(k) * stats::rnorm(1)
     #newS[,i]<- newS[,i] + .01 * f.range(k) * runif(1,0,1)
   }
   enforceBounds(as.data.frame(newS), f$parameters)
@@ -1766,7 +1767,10 @@ abm.ees2<- function(objective, options= NULL) {
 
   ## --- Metaheuristic options
   N<- options$getValue("N")
+  rho<- options$getValue("rho")
   iterations<- options$getValue("iterations")
+
+  n<- trunc(N*rho)
 
   elog.info("Initializing solution")
   parameters<- objective$getParameters()
@@ -1777,7 +1781,7 @@ abm.ees2<- function(objective, options= NULL) {
 
   elog.info("Starting metaheuristic")
   for(iteration in 1:(iterations-1)) {
-    s<- data.frame(getSolution(s0)[1:5,], stringsAsFactors=FALSE)
+    s<- data.frame(getSolution(s0)[1:n,], stringsAsFactors=FALSE)
     mmin<- apply(s,2,min)
     mmax<- apply(s,2,max)
     mmean<- apply(s,2,mean)
