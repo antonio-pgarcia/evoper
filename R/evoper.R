@@ -576,9 +576,10 @@ OptionsEES1<- setRefClass("OptionsEES1", contains = "Options",
     initialize = function() {
       callSuper()
       setType("ees1")
-      setValue("N", 6)              ## Solution size
-      setValue("mu", 0.2)           ## Fitness preference strenght
-      setValue("kkappa", 0.1)       ## Selective pressure
+      setValue("N", 10)             ## Solution size
+      setValue("mu", 0.3)           ## Fitness preference strenght
+      setValue("rho", 0.01)         ## Mutation probability
+      setValue("kkappa", 0.2)       ## Selective pressure
       setValue("iterations", 50)    ## Total number of iterations
     }
   )
@@ -1489,10 +1490,11 @@ abm.ees1<- function(objective, options= NULL) {
   iterations<- options$getValue("iterations")
   N<- options$getValue("N")
   mu<- options$getValue("mu")                 ##
+  rho<- options$getValue("rho")               ##
   kkappa<- options$getValue("kkappa")         ##
 
   #iterations<- 100
-  N<- 6
+  #N<- 6
 
   elog.info("Initializing solution")
   s<- initSolution(objective$parameters, N, "lhs")
@@ -1505,8 +1507,7 @@ abm.ees1<- function(objective, options= NULL) {
   for(iteration in 1:iterations) {
     mates<- ees1.mating1(getSolution(s0), mu)
     s<- ees1.recombination(s0, mates)
-    s<- ees1.mutation(s, mates)
-    #s<- ees1.challenge(s,2)
+    s<- ees1.mutation(s, mates, rho)
 
     ## --- Evaluate solution
     s1<- es.evaluate(objective, getSolution(s))
@@ -1514,10 +1515,6 @@ abm.ees1<- function(objective, options= NULL) {
     ## --- Selection
     s0<- ees1.selection(s0, s1, kkappa)
 
-    #if(runif(1) < 0.2) {
-    # elog.info("Challenging current solution set")
-    #  s0<- es.evaluate(objective, getSolution(s0))
-    #}
 
     ## --- Storing the best of this iteration
     estimates$addIterationBest(iteration, s1[1,])
@@ -1649,14 +1646,44 @@ ees1.recombination<- function(solution, mates) {
 #'
 #' @param solution The Problem solution
 #' @param mates The mixed parents
+#' @param p The mutation probability
 #'
 #' @export
-ees1.mutation<- function(solution, mates) {
+ees1.mutation<- function(solution, mates, p=0.01) {
   m<- length(solution[,1])
   n<- length(solution[1,])
   s<- getSolution(solution)
   for(i in 1:m) {
     s[i,]<- ees1.explore(s[i,],getFitness(solution, i))
+  }
+  s
+}
+
+#' @title ees1.explore
+#'
+#' @description Explore the solution space on the neighborhood of
+#' solution 's' in order to find a new best.
+#'
+#' @param s The Problem solution
+#' @param weight The exploration intensity
+#' @param p The mutation probability
+#'
+#' @export
+ees1.explore<- function(s, weight, p=0.01) {
+  m<- length(s[,1])
+  n<- length(s[1,])
+  w<- Magnitude(weight)
+  w<- ifelse(w < 0, 1/abs(w), 1)
+
+  for(i in 1:m) {
+    for(j in 1:n) {
+      if(runif(1) < p) {
+        mm<- Magnitude(s[i,j])
+        e<- ifelse(mm < 0, 0, mm)
+        p<- s[i,j]
+        s[i,j]<- s[i,j] + runif(1,-10^e,10^e) * w
+      }
+    }
   }
   s
 }
@@ -1682,31 +1709,6 @@ ees1.challenge<- function(solution, objective) {
     }
   }
   s0
-}
-
-#' @title ees1.explore
-#'
-#' @description Explore the solution space on the neighborhood of
-#' solution 's' in order to find a new best.
-#'
-#' @param s The Problem solution
-#' @param weight The exploration intensity
-#'
-#' @export
-ees1.explore<- function(s, weight) {
-  m<- length(s[,1])
-  n<- length(s[1,])
-  w<- Magnitude(weight)
-  w<- ifelse(w < 0, 1/abs(w), 1)
-
-  for(i in 1:m) {
-    for(j in 1:n) {
-      mm<- Magnitude(s[i,j])
-      e<- ifelse(mm < 0, 0, mm)
-      s[i,j]<- s[i,j] + runif(1,-10^e,10^e) * w
-    }
-  }
-  s
 }
 
 #' @title ees.selection
@@ -2498,6 +2500,70 @@ f0.nlnn.rosenbrock2<- function(x1, x2) {
 #'
 #' @export
 f1.nlnn.rosenbrock2<- function(x) { f0.nlnn.rosenbrock2(x[1], x[2]) }
+
+#' @title f0.cigar
+#'
+#' @description The Cigar function of N variables for testing optimization
+#' methods. The global optima for the function is given by
+#' xi = 0, forall i E {1...N}, f(x) = 0.
+#'
+#' @param ... The variadic list of function variables.
+#'
+#' @return The function value
+#'
+#' @references
+#'
+#' http://deap.gel.ulaval.ca/doc/dev/api/benchmarks.html
+#'
+#' @export
+f0.cigar<- function(...) {
+  x<- list(...)
+  f1.cigar(unlist(x))
+}
+
+#' @title f1.cigar
+#'
+#' @description The Cigar function of N variables for testing optimization
+#' methods. The global optima for the function is given by
+#' xi = 0, forall i E {1...N}, f(x) = 0.
+#'
+#' @param x The vector of function variables.
+#'
+#' @return The function value
+#'
+#' @references
+#'
+#' http://deap.gel.ulaval.ca/doc/dev/api/benchmarks.html
+#'
+#' @export
+f1.cigar<- function(x) {
+  ssum<- function(x) {
+    s<- 0
+    for(i in 2:length(x)) {
+      s<- s + x[i]^2
+    }
+    s
+  }
+  x[1]^2 + 10^6 * ssum(x)
+}
+
+#' @title f0.cigar4
+#'
+#' @description The Cigar function of four variables for testing optimization
+#' methods. The global optima for the function is given by
+#' xi = 0, forall i E {1...N}, f(x) = 0.
+#'
+#' @param x1 The first function variable
+#' @param x2 The second function variable
+#' @param x3 The third function variable
+#' @param x4 The fourth function variable
+#'
+#' @return The function value
+#'
+#' @export
+f0.cigar4<- function(x1, x2, x3, x4) {
+  f1.cigar(c(x1, x2, x3, x4))
+}
 
 #' @title predatorprey
 #'

@@ -4,12 +4,14 @@
 \alias{ees1.explore}
 \title{ees1.explore}
 \usage{
-ees1.explore(s, weight)
+ees1.explore(s, weight, p = 0.01)
 }
 \arguments{
 \item{s}{The Problem solution}
 
 \item{weight}{The exploration intensity}
+
+\item{p}{The mutation probability}
 }
 \description{
 Explore the solution space on the neighborhood of

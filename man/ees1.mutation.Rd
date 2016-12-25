@@ -4,12 +4,14 @@
 \alias{ees1.mutation}
 \title{ees1.mutation}
 \usage{
-ees1.mutation(solution, mates)
+ees1.mutation(solution, mates, p = 0.01)
 }
 \arguments{
 \item{solution}{The Problem solution}
 
 \item{mates}{The mixed parents}
+
+\item{p}{The mutation probability}
 }
 \description{
 Performs the mutation on generated solution
