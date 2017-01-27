@@ -2,9 +2,9 @@
 % Please edit documentation in R/evoper.R
 \name{f0.periodtuningpp}
 \alias{f0.periodtuningpp}
-\title{Period tuning for Predator-Prey}
+\title{Period tuning for Predator-Prey base}
 \usage{
-f0.periodtuningpp(x1, x2, x3, x4)
+f0.periodtuningpp(x1, x2, x3, x4, period)
 }
 \arguments{
 \item{x1}{The growth rate of prey}
@@ -14,6 +14,8 @@ f0.periodtuningpp(x1, x2, x3, x4)
 \item{x3}{The predating effect on prey}
 
 \item{x4}{The predating effecto on predator}
+
+\item{period}{The desired oscilation period}
 }
 \value{
 The solution fitness cost
@@ -21,19 +23,7 @@ The solution fitness cost
 \description{
 This function is an example on how EvoPER can be
 used for estimating the parameter values in order to produce
-oscilations with the desired period.
-}
-\examples{
-\dontrun{
-rm(list=ls())
-set.seed(-27262565)
-f<- PlainFunction$new(f0.periodtuningpp)
-f$Parameter(name="x1",min=0.5,max=2)
-f$Parameter(name="x2",min=0.5,max=2)
-f$Parameter(name="x3",min=0.5,max=2)
-f$Parameter(name="x4",min=0.5,max=2)
-extremize("pso", f)
-}
-
+oscilations with the desired period. It is not intended to be
+used directelly, the provided wrappers should be instead.
 }
 

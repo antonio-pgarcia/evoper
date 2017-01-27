@@ -2501,6 +2501,130 @@ f0.nlnn.rosenbrock2<- function(x1, x2) {
 #' @export
 f1.nlnn.rosenbrock2<- function(x) { f0.nlnn.rosenbrock2(x[1], x[2]) }
 
+
+#' @title f0.rosenbrockn
+#'
+#' @description The rosenbrock function of N variables for testing
+#' optimization methods. The global optima for the function is given by
+#' xi = 1, forall i E {1...N}, f(x) = 0.
+#'
+#' @param ... The variadic list of function variables.
+#'
+#' @return The function value
+#'
+#' @references
+#'
+#' http://deap.gel.ulaval.ca/doc/dev/api/benchmarks.html
+#'
+#' @export
+f0.rosenbrockn<- function(...) {
+  x<- list(...)
+  f1.rosenbrockn(unlist(x))
+}
+
+#' @title f1.rosenbrockn
+#'
+#' @description The rosenbrock function of N variables for testing
+#' optimization methods. The global optima for the function is given by
+#' xi = 1, forall i E {1...N}, f(x) = 0.
+#'
+#' @param x The vector of function parameters
+#'
+#' @return The function value
+#'
+#' @references
+#'
+#' http://deap.gel.ulaval.ca/doc/dev/api/benchmarks.html
+#'
+#' @export
+f1.rosenbrockn<- function(x) {
+  ssum<- 0
+  for(i in 1:(length(x)-1)) {
+    ssum<- ssum + (1 - x[i])^2 + 100 * (x[i+1] - x[i]^2)^2
+  }
+  ssum
+}
+
+#' @title f0.rosenbrock4
+#'
+#' @description The rosenbrock function of 4 variables for testing
+#' optimization methods. The global optima for the function is given by
+#' xi = 1, forall i E {1...N}, f(x) = 0.
+#'
+#' @param x1 The first function variable
+#' @param x2 The second function variable
+#' @param x3 The third function variable
+#' @param x4 The fourth function variable
+#'
+#' @return The function value
+#'
+#' @export
+f0.rosenbrock4<- function(x1, x2, x3, x4) {
+  f1.rosenbrockn(c(x1, x2, x3, x4))
+}
+
+#' @title f0.schwefel
+#'
+#' @description The schwefel function of N variables for testing optimization
+#' methods. The global optima for the function is given by
+#' xi = 420.96874636, forall i E {1...N}, f(x) = 0. The range of xi is [-500,500]
+#'
+#' @param ... The variadic list of function variables.
+#'
+#' @return The function value
+#'
+#' @references
+#'
+#' http://deap.gel.ulaval.ca/doc/dev/api/benchmarks.html
+#'
+#' @export
+f0.schwefel<- function(...) {
+  x<- list(...)
+  f1.schwefel(unlist(x))
+}
+
+#' @title f1.schwefel
+#'
+#' @description The schwefel function of N variables for testing optimization
+#' methods. The global optima for the function is given by
+#' xi = 420.96874636, forall i E {1...N}, f(x) = 0. The range of xi is [-500,500]
+#'
+#' @param x The vector of function variables.
+#'
+#' @return The function value
+#'
+#' @references
+#'
+#' http://deap.gel.ulaval.ca/doc/dev/api/benchmarks.html
+#'
+#' @export
+f1.schwefel<- function(x) {
+  N<- length(x)
+  ssum<- 0
+  for(i in 1:N) {
+    ssum<- ssum + x[i] * sin(sqrt(abs(x[i])))
+  }
+  abs(round((418.9828872724339 * N - ssum), sqrt(.Machine$double.eps)))
+}
+
+#' @title f0.schwefel4
+#'
+#' @description The schwefel function of N variables for testing optimization
+#' methods. The global optima for the function is given by
+#' xi = 420.96874636, forall i E {1...N}, f(x) = 0. The range of xi is [-500,500]
+#'
+#' @param x1 The first function variable
+#' @param x2 The second function variable
+#' @param x3 The third function variable
+#' @param x4 The fourth function variable
+#'
+#' @return The function value
+#'
+#' @export
+f0.schwefel4<- function(x1, x2, x3, x4) {
+  f1.schwefel(c(x1, x2, x3, x4))
+}
+
 #' @title f0.cigar
 #'
 #' @description The Cigar function of N variables for testing optimization
@@ -2580,7 +2704,7 @@ f0.cigar4<- function(x1, x2, x3, x4) {
 predatorprey<- function(x1, x2, x3, x4) {
   value<- c(x = 12, y = 12)
   parameters<- c(c1 = x1, c2 = x2, c3 = x3, c4 = x4)
-  time<- seq(0, 96, by = 1)
+  time<- seq(0, 288, by = 1)
 
   ## Predator-Prey ODE function
   f.diffequation<- function (t, y, parms) {
@@ -2619,7 +2743,28 @@ predatorprey.plot<- function(x1, x2, x3, x4) {
   p + geom_line() + ggtitle("Predator/Prey period")
 }
 
-#' @title Period tuning for Predator-Prey
+#' @title Period tuning for Predator-Prey base
+#'
+#' @description This function is an example on how EvoPER can be
+#' used for estimating the parameter values in order to produce
+#' oscilations with the desired period. It is not intended to be
+#' used directelly, the provided wrappers should be instead.
+#'
+#' @param x1 The growth rate of prey
+#' @param x2 The decay rate of predator
+#' @param x3 The predating effect on prey
+#' @param x4 The predating effecto on predator
+#' @param period The desired oscilation period
+#'
+#' @return The solution fitness cost
+#'
+#' @export
+f0.periodtuningpp<- function(x1, x2, x3, x4, period) {
+  v<- predatorprey(x1, x2, x3, x4)
+  rrepast::AoE.NRMSD(naiveperiod(v[,"y"])$period, period)
+}
+
+#' @title Period tuning of 12 time units for Predator-Prey
 #'
 #' @description This function is an example on how EvoPER can be
 #' used for estimating the parameter values in order to produce
@@ -2635,7 +2780,7 @@ predatorprey.plot<- function(x1, x2, x3, x4) {
 #' @examples \dontrun{
 #'	rm(list=ls())
 #'	set.seed(-27262565)
-#'	f<- PlainFunction$new(f0.periodtuningpp)
+#'	f<- PlainFunction$new(f0.periodtuningpp12)
 #'	f$Parameter(name="x1",min=0.5,max=2)
 #'	f$Parameter(name="x2",min=0.5,max=2)
 #'	f$Parameter(name="x3",min=0.5,max=2)
@@ -2644,7 +2789,93 @@ predatorprey.plot<- function(x1, x2, x3, x4) {
 #' }
 #'
 #' @export
-f0.periodtuningpp<- function(x1, x2, x3, x4) {
-  v<- predatorprey(x1, x2, x3, x4)
-  rrepast::AoE.NRMSD(naiveperiod(v[,"y"])$period,24)
+f0.periodtuningpp12<- function(x1, x2, x3, x4) {
+  f0.periodtuningpp(x1, x2, x3, x4, 12)
+}
+
+#' @title Period tuning of 24 time units for Predator-Prey
+#'
+#' @description This function is an example on how EvoPER can be
+#' used for estimating the parameter values in order to produce
+#' oscilations with the desired period.
+#'
+#' @param x1 The growth rate of prey
+#' @param x2 The decay rate of predator
+#' @param x3 The predating effect on prey
+#' @param x4 The predating effecto on predator
+#'
+#' @return The solution fitness cost
+#'
+#' @examples \dontrun{
+#'	rm(list=ls())
+#'	set.seed(-27262565)
+#'	f<- PlainFunction$new(f0.periodtuningpp24)
+#'	f$Parameter(name="x1",min=0.5,max=2)
+#'	f$Parameter(name="x2",min=0.5,max=2)
+#'	f$Parameter(name="x3",min=0.5,max=2)
+#'	f$Parameter(name="x4",min=0.5,max=2)
+#'	extremize("pso", f)
+#' }
+#'
+#' @export
+f0.periodtuningpp24<- function(x1, x2, x3, x4) {
+  f0.periodtuningpp(x1, x2, x3, x4, 24)
+}
+
+#' @title Period tuning of 48 time units for Predator-Prey
+#'
+#' @description This function is an example on how EvoPER can be
+#' used for estimating the parameter values in order to produce
+#' oscilations with the desired period.
+#'
+#' @param x1 The growth rate of prey
+#' @param x2 The decay rate of predator
+#' @param x3 The predating effect on prey
+#' @param x4 The predating effecto on predator
+#'
+#' @return The solution fitness cost
+#'
+#' @examples \dontrun{
+#'	rm(list=ls())
+#'	set.seed(-27262565)
+#'	f<- PlainFunction$new(f0.periodtuningpp24)
+#'	f$Parameter(name="x1",min=0.5,max=2)
+#'	f$Parameter(name="x2",min=0.5,max=2)
+#'	f$Parameter(name="x3",min=0.5,max=2)
+#'	f$Parameter(name="x4",min=0.5,max=2)
+#'	extremize("pso", f)
+#' }
+#'
+#' @export
+f0.periodtuningpp48<- function(x1, x2, x3, x4) {
+  f0.periodtuningpp(x1, x2, x3, x4, 48)
+}
+
+#' @title Period tuning of 72 time units for Predator-Prey
+#'
+#' @description This function is an example on how EvoPER can be
+#' used for estimating the parameter values in order to produce
+#' oscilations with the desired period.
+#'
+#' @param x1 The growth rate of prey
+#' @param x2 The decay rate of predator
+#' @param x3 The predating effect on prey
+#' @param x4 The predating effecto on predator
+#'
+#' @return The solution fitness cost
+#'
+#' @examples \dontrun{
+#'	rm(list=ls())
+#'	set.seed(-27262565)
+#'	f<- PlainFunction$new(f0.periodtuningpp24)
+#'	f$Parameter(name="x1",min=0.5,max=2)
+#'	f$Parameter(name="x2",min=0.5,max=2)
+#'	f$Parameter(name="x3",min=0.5,max=2)
+#'	f$Parameter(name="x4",min=0.5,max=2)
+#'	extremize("pso", f)
+#' }
+#'
+#' @export
+f0.periodtuningpp72<- function(x1, x2, x3, x4) {
+  f0.periodtuningpp(x1, x2, x3, x4, 72)
 }

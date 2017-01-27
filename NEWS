@@ -3,10 +3,16 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Added
+- f0.rosenbrockn Rosenbrock of N parameters for variadic input
+- f1.rosenbrockn Rosenbrock of N parameters for vectors
+- f0.cigar Cigar of N parameters for variadic input
+- f1.cigar Cigar of N parameters for vectors
+- f0.schwefel Schwefel of N parameters for variadic input
+- f1.schwefel Schwefel of N parameters for vectors
 
 ### Changed
 
-## EvoPER [0.3.0] - 2016-07-10
+## EvoPER [0.3.0] - 2016-11-26
 ### Added
 - Estimates class for returning results of extremize function
 - OptionsACOR class for ACOr Options
