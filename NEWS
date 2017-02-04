@@ -9,8 +9,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - f1.cigar Cigar of N parameters for vectors
 - f0.schwefel Schwefel of N parameters for variadic input
 - f1.schwefel Schwefel of N parameters for vectors
+- predatorprey.plot1 A wrapper for predatorprey.plot0 for parameter list instead single vars
 
 ### Changed
+predatorprey.plot - Now is predatorprey.plot0
+
 
 ## EvoPER [0.3.0] - 2016-11-26
 ### Added

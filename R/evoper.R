@@ -521,10 +521,11 @@ OptionsSAA<- setRefClass("OptionsSAA", contains = "Options",
     initialize = function() {
       callSuper()
       setType("saa")
-      setValue("t0", 1*10^4)
+      setValue("iterations", 500)
+      setValue("t0", 8*10^12)
       setValue("t.min", 10^-5)
-      setValue("L", 50)
-      setValue("d", 0.05)
+      setValue("L", 10)
+      setValue("d", 0.5)
       neighborhoodFunction(saa.neighborhoodN)
       setTemperatureF(saa.tcte)
     },
@@ -603,9 +604,9 @@ OptionsEES2<- setRefClass("OptionsEES2", contains = "Options",
     initialize = function() {
       callSuper()
       setType("ees2")
-      setValue("N", 100)           ## Solution size
-      setValue("rho", 0.05)        ## Solution size
-      setValue("iterations", 10)   ## Total number of iterations
+      setValue("N", 10)           ## Solution size 100
+      setValue("rho", 0.7)        ## Solution size 0.05
+      setValue("iterations", 50)   ## Total number of iterations 10
     }
   )
 )
@@ -983,7 +984,7 @@ abm.saa<- function(objective, options= NULL) {
 
   ## Generates an initial solution
   elog.info("Initializing solution")
-  s<- initSolution(objective$parameters,1)
+  s<- initSolution(objective$parameters, 1)
   f<- objective$EvalFitness(s)
   S<- sortSolution(s, f)
   bestS<- S
@@ -996,7 +997,7 @@ abm.saa<- function(objective, options= NULL) {
     S<- bestS
     for(l in 1:L) {
       ## Evaluate a neighbor of s
-      s1<- f.neighborhood(objective,getSolution(S),0.01)
+      s1<- f.neighborhood(objective,getSolution(S), d)
       f1<- objective$EvalFitness(s1)
       S1<- sortSolution(s1, f1)
 
@@ -1052,10 +1053,21 @@ saa.neighborhood<- function(f, S, d, n) {
   for(i in sample(1:ncol(S),n)) {
     k<- colnames(S)[i]
     distance<- f.range(k) * d
+    m.mean<- mean( c(as.numeric(f$getParameterValue(k,"max")), as.numeric(f$getParameterValue(k,"min"))) )
+
     #newS[,i]<- newS[,i] + runif(1,as.numeric(f$getParameterValue(k,"min")),as.numeric(f$getParameterValue(k,"max"))) * distance
-    newS[,i]<- newS[,i] + runif(1,-1,1) * distance
-    #>>newS[,i]<- newS[,i] + 0.01 * f.range(k) * stats::rnorm(1)
-    #newS[,i]<- newS[,i] + .01 * f.range(k) * runif(1,0,1)
+    #88# newS[,i]<- newS[,i] + newS[,i] * runif(1,-1,1) * distance
+
+    if(runif(1) < 1/5) {
+      #newS[,i]<- newS[,i] + stats::rnorm(1)
+      newS[,i]<- stats::rnorm(1,mean=m.mean,sd=distance)
+    } else {
+      #newS[,i]<- stats::rnorm(1,mean=m.mean,sd=distance)
+      newS[,i]<- newS[,i] + newS[,i] * runif(1,-1,1)
+    }
+
+
+    #99# newS[,i]<- newS[,i] + .01 * f.range(k) * runif(1,0,1)
   }
   enforceBounds(as.data.frame(newS), f$parameters)
 }
@@ -2702,9 +2714,9 @@ f0.cigar4<- function(x1, x2, x3, x4) {
 #'
 #' @export
 predatorprey<- function(x1, x2, x3, x4) {
-  value<- c(x = 12, y = 12)
+  value<- c(x = 120, y = 12)
   parameters<- c(c1 = x1, c2 = x2, c3 = x3, c4 = x4)
-  time<- seq(0, 288, by = 1)
+  time<- seq(0, 120, by = 1)
 
   ## Predator-Prey ODE function
   f.diffequation<- function (t, y, parms) {
@@ -2718,30 +2730,58 @@ predatorprey<- function(x1, x2, x3, x4) {
   deSolve::ode(func = f.diffequation, y = value, parms = parameters, times = time,  method = "radau")
 }
 
-#' @title predatorprey.plot
+#' @title predatorprey.plot0
 #'
 #' @description Generate a plot for the predator-prey ODE output.
 #'
 #' @param x1 The growth rate of prey
 #' @param x2 The decay rate of predator
 #' @param x3 The predating effect on prey
-#' @param x4 The predating effecto on predator
+#' @param x4 The predating effect on predator
 #'
 #' @return An ggplot2 object
 #'
 #' @examples \dontrun{
-#'  predatorprey.plot(1.351888, 1.439185, 1.337083, 0.9079049)
+#'  predatorprey.plot0(1.351888, 1.439185, 1.337083, 0.9079049)
 #' }
 #'
 #' @importFrom reshape melt
 #' @importFrom ggplot2 ggplot aes geom_line ggtitle
 #' @export
-predatorprey.plot<- function(x1, x2, x3, x4) {
+predatorprey.plot0<- function(x1, x2, x3, x4, title = NULL) {
   v<- as.data.frame(predatorprey(x1, x2, x3, x4))
   v.data<- melt(v, id.vars="time", value.name="value", variable_name="species")
   p<- ggplot(data= v.data, with(v.data,aes(x=time, y=value, group = species, colour = species)))
-  p + geom_line() + ggtitle("Predator/Prey period")
+  p + geom_line() + ggtitle(title)
 }
+
+#' @title predatorprey.plot1
+#'
+#' @description Simple wrapper for 'predatorprey.plot0' accepting the parameters as a list.
+#'
+#' @param x A list containing the values of predator/prey parameters c1, c2, c3 and c4
+#' denoting respectivelly the growth rate of prey, the decay rate of predator,
+#' the predating effect on prey and the predating effect on predator
+#'
+#' @return An ggplot2 object
+#'
+#' @examples \dontrun{
+#'  rm(list=ls())
+#   set.seed(27262565)
+#   f<- PlainFunction$new(f0.periodtuningpp24)
+#   f$Parameter(name="x1",min=0.5,max=2)
+#   f$Parameter(name="x2",min=0.5,max=2)
+#   f$Parameter(name="x3",min=0.5,max=2)
+#   f$Parameter(name="x4",min=0.5,max=2)
+#   v<- extremize("acor", f)
+#'  predatorprey.plot1(v$getBest()[1:4])
+#' }
+#'
+#' @export
+predatorprey.plot1<- function(x, title = NULL) {
+    predatorprey.plot0(as.numeric(x[1]),as.numeric(x[2]),as.numeric(x[3]),as.numeric(x[4]), title)
+}
+
 
 #' @title Period tuning for Predator-Prey base
 #'
@@ -2761,7 +2801,7 @@ predatorprey.plot<- function(x1, x2, x3, x4) {
 #' @export
 f0.periodtuningpp<- function(x1, x2, x3, x4, period) {
   v<- predatorprey(x1, x2, x3, x4)
-  rrepast::AoE.NRMSD(naiveperiod(v[,"y"])$period, period)
+  rrepast::AoE.NRMSD(naiveperiod(ifelse(v[,"y"] < 0, .Machine$double.xmax, v[,"y"]))$period, period)
 }
 
 #' @title Period tuning of 12 time units for Predator-Prey
