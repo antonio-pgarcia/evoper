@@ -270,6 +270,8 @@ PlainFunction<- setRefClass("PlainFunction", contains = "ObjectiveFunction",
 
   methods = list(
     initialize = function(o= NULL) {
+      assert(!is.null(o),"NUll function!")
+      assert(is.function(o),"Invalid function!")
       if(is.null(o)) {
         o<- objective
       }
@@ -433,7 +435,7 @@ Options<- setRefClass("Options",
   methods = list(
     initialize = function() {
       type<<- 'none'
-      container<<- list(iterations=100, trace=FALSE)
+      container<<- list(iterations=500, trace=FALSE)
     },
 
     ## Set/Get the neighborhood function
@@ -498,7 +500,7 @@ OptionsPSO<- setRefClass("OptionsPSO", contains = "Options",
       setValue("phi1",1.193)
       setValue("phi2",1.193)
       setValue("W",0.721)
-      neighborhoodFunction(pso.neighborhood.KN)
+      neighborhoodFunction(pso.neighborhood.K4)
     }
   )
 )
@@ -581,7 +583,7 @@ OptionsEES1<- setRefClass("OptionsEES1", contains = "Options",
       setValue("mu", 0.3)           ## Fitness preference strenght
       setValue("rho", 0.01)         ## Mutation probability
       setValue("kkappa", 0.2)       ## Selective pressure
-      setValue("iterations", 50)    ## Total number of iterations
+      setValue("iterations", 100)   ## Total number of iterations
     }
   )
 )
@@ -604,9 +606,9 @@ OptionsEES2<- setRefClass("OptionsEES2", contains = "Options",
     initialize = function() {
       callSuper()
       setType("ees2")
-      setValue("N", 10)           ## Solution size 100
-      setValue("rho", 0.7)        ## Solution size 0.05
-      setValue("iterations", 50)   ## Total number of iterations 10
+      setValue("N", 20)           ## Solution size 100
+      setValue("rho", 0.25)        ## Solution size 0.05
+      setValue("iterations", 10)   ## Total number of iterations 10
     }
   )
 )
@@ -1246,7 +1248,9 @@ abm.acor<- function(objective, options= NULL) {
     if(objective$isConverged(T[1, "fitness"])) break
   }
 
-  estimates$setBest(T[1,])
+  tmp<- T[1,-which(names(T[1,]) %in% c("w"))]
+  tmp$pset<- row.names(tmp)
+  estimates$setBest(tmp)
   estimates
 }
 
@@ -2307,7 +2311,6 @@ fixdfcolumns<- function(df, cols= c(), skip=TRUE, type=as.numeric) {
   df
 }
 
-
 #' @title xyplothelper
 #'
 #' @description Simple helper for ploting xy dispersion points.
@@ -2699,6 +2702,191 @@ f1.cigar<- function(x) {
 #' @export
 f0.cigar4<- function(x1, x2, x3, x4) {
   f1.cigar(c(x1, x2, x3, x4))
+}
+
+#' @title f0.schaffer
+#'
+#' @description The schaffer function of N variables for testing
+#' optimization methods. The global optima for the function is given by
+#' xi = 0, forall i E {1...N}, f(x) = 0.
+#'
+#' @param ... The variadic list of function variables.
+#'
+#' @return The function value
+#'
+#' @references
+#'
+#' http://deap.gel.ulaval.ca/doc/dev/api/benchmarks.html
+#'
+#' @export
+f0.schaffer<- function(...) {
+  x<- list(...)
+  f1.schaffer(unlist(x))
+}
+
+#' @title f1.schaffer
+#'
+#' @description The schaffer function of N variables for testing
+#' optimization methods. The global optima for the function is given by
+#' xi = 0, forall i E {1...N}, f(x) = 0.
+#'
+#' @param x The vector of function parameters
+#'
+#' @return The function value
+#'
+#' @references
+#'
+#' http://deap.gel.ulaval.ca/doc/dev/api/benchmarks.html
+#'
+#' @export
+f1.schaffer<- function(x) {
+  ssum<- 0
+  for(i in 1:(length(x)-1)) {
+    ssum<- ssum + (x[i]^2 + x[i+1]^2)^0.25 * (sin(50 * (x[i]^2 + x[i+1]^2)^0.1)^2 + 1)
+  }
+  ssum
+}
+
+#' @title f0.schaffer4
+#'
+#' @description The Schaffer function of four variables for testing optimization
+#' methods. The global optima for the function is given by
+#' xi = 0, forall i E {1...N}, f(x) = 0.
+#'
+#' @param x1 The first function variable
+#' @param x2 The second function variable
+#' @param x3 The third function variable
+#' @param x4 The fourth function variable
+#'
+#' @return The function value
+#'
+#' @export
+f0.schaffer4<- function(x1, x2, x3, x4) {
+  f0.schaffer(c(x1, x2, x3, x4))
+}
+
+#' @title f0.bohachevsky
+#'
+#' @description The Bohachevsky function of N variables for testing
+#' optimization methods. The global optima for the function is given by
+#' xi = 0, forall i E {1...N}, f(x) = 0.
+#'
+#' @param ... The variadic list of function variables.
+#'
+#' @return The function value
+#'
+#' @references
+#'
+#' http://deap.gel.ulaval.ca/doc/dev/api/benchmarks.html
+#'
+#' @export
+f0.bohachevsky<- function(...) {
+  x<- list(...)
+  f1.bohachevsky(unlist(x))
+}
+
+#' @title f1.bohachevsky
+#'
+#' @description The Bohachevsky function of N variables for testing
+#' optimization methods. The global optima for the function is given by
+#' xi = 0, forall i E {1...N}, f(x) = 0.
+#'
+#' @param x The vector of function parameters
+#'
+#' @return The function value
+#'
+#' @references
+#'
+#' http://deap.gel.ulaval.ca/doc/dev/api/benchmarks.html
+#'
+#' @export
+f1.bohachevsky<- function(x) {
+  ssum<- 0
+  for(i in 1:(length(x)-1)) {
+    ssum<- ssum + ( x[i]^2 + x[i+1]^2 - 0.3 * cos(3 * pi * x[i]) - 0.4 * cos(4 * pi * x[i+1]) + 0.7 )
+  }
+  ssum
+}
+
+#' @title f0.bohachevsky4
+#'
+#' @description The Bohachevsky function of four variables for testing optimization
+#' methods. The global optima for the function is given by
+#' xi = 0, forall i E {1...N}, f(x) = 0.
+#'
+#' @param x1 The first function variable
+#' @param x2 The second function variable
+#' @param x3 The third function variable
+#' @param x4 The fourth function variable
+#'
+#' @return The function value
+#'
+#' @export
+f0.bohachevsky4<- function(x1, x2, x3, x4) {
+  f0.bohachevsky(c(x1, x2, x3, x4))
+}
+
+#' @title f0.griewank
+#'
+#' @description The griewank function of N variables for testing
+#' optimization methods. The global optima for the function is given by
+#' xi = 0, forall i E {1...N}, f(x) = 0.
+#'
+#' @param ... The variadic list of function variables.
+#'
+#' @return The function value
+#'
+#' @references
+#'
+#' http://deap.gel.ulaval.ca/doc/dev/api/benchmarks.html
+#'
+#' @export
+f0.griewank<- function(...) {
+  x<- list(...)
+  f1.griewank(unlist(x))
+}
+
+#' @title f1.griewank
+#'
+#' @description The griewank function of N variables for testing
+#' optimization methods. The global optima for the function is given by
+#' xi = 0, forall i E {1...N}, f(x) = 0.
+#'
+#' @param x The vector of function parameters
+#'
+#' @return The function value
+#'
+#' @references
+#'
+#' http://deap.gel.ulaval.ca/doc/dev/api/benchmarks.html
+#'
+#' @export
+f1.griewank<- function(x) {
+  ssum<- 0
+  prod<- 1
+  for(i in 1:(length(x))) {
+    ssum<- ssum + x[i]^2
+    prod<- prod * cos(x[i]/sqrt(1))
+  }
+  (1/4000 * ssum - prod + 1)
+}
+
+#' @title f0.griewank4
+#'
+#' @description The griewank function of four variables for testing optimization
+#' methods. The global optima for the function is given by
+#' xi = 0, forall i E {1...N}, f(x) = 0.
+#'
+#' @param x1 The first function variable
+#' @param x2 The second function variable
+#' @param x3 The third function variable
+#' @param x4 The fourth function variable
+#'
+#' @return The function value
+#'
+#' @export
+f0.griewank4<- function(x1, x2, x3, x4) {
+  f0.griewank(c(x1, x2, x3, x4))
 }
 
 #' @title predatorprey

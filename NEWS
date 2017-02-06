@@ -9,10 +9,19 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - f1.cigar Cigar of N parameters for vectors
 - f0.schwefel Schwefel of N parameters for variadic input
 - f1.schwefel Schwefel of N parameters for vectors
+- f0.bohachevsky Bohachevsky of N parameters for variadic input
+- f1.bohachevsky Bohachevsky of N parameters for vectors
+- f0.schaffer Schaffer of N parameters for variadic input
+- f1.schaffer Schaffer of N parameters for vectors
 - predatorprey.plot1 A wrapper for predatorprey.plot0 for parameter list instead single vars
+- compare.algorithms1 Sistematic comparison of optimization algorithms
+- show.comp1 Plot the results of 'compare.algorithms1'
 
 ### Changed
-predatorprey.plot - Now is predatorprey.plot0
+- predatorprey.plot - Now is predatorprey.plot0
+- Estimates$getBest() - Fixed return value for ACOR eliminating "w"
+- Default neighborhood function of PSO, previously was KN and now is K4
+
 
 
 ## EvoPER [0.3.0] - 2016-11-26
