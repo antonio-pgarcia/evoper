@@ -606,9 +606,9 @@ OptionsEES2<- setRefClass("OptionsEES2", contains = "Options",
     initialize = function() {
       callSuper()
       setType("ees2")
-      setValue("N", 20)           ## Solution size 100
+      setValue("N", 20)            ## Solution size 100
       setValue("rho", 0.25)        ## Solution size 0.05
-      setValue("iterations", 10)   ## Total number of iterations 10
+      setValue("iterations", 30)   ## Total number of iterations 10
     }
   )
 )
@@ -1802,16 +1802,19 @@ abm.ees2<- function(objective, options= NULL) {
     s<- data.frame(getSolution(s0)[1:n,], stringsAsFactors=FALSE)
     mmin<- apply(s,2,min)
     mmax<- apply(s,2,max)
-    mmean<- apply(s,2,mean)
+    mmean<- apply(s,2,gm.mean)
     ssd<- apply(s,2,sd)
     interval<-  abs(mmax-mmin)/2
 
     for(k in parameters$name) {
-      parameters[which(parameters$name == k),"min"]<- as.numeric((mmean-interval-runif(1))[k])
-      parameters[which(parameters$name == k),"max"]<- as.numeric((mmean+interval+runif(1))[k])
+      if(runif(1) < 1/5) {
+        parameters[which(parameters$name == k),"min"]<- as.numeric((mmean-interval-runif(1,0,1))[k])
+        parameters[which(parameters$name == k),"max"]<- as.numeric((mmean+interval+runif(1,0,1))[k])
+      } else {
+        parameters[which(parameters$name == k),"min"]<- as.numeric(( mmean - interval * runif(1,1,3))[k])
+        parameters[which(parameters$name == k),"max"]<- as.numeric(( mmean + interval * runif(1,1,3))[k])
+      }
     }
-
-
 
     s<- initSolution(parameters, N, "lhs")
 
@@ -1819,7 +1822,7 @@ abm.ees2<- function(objective, options= NULL) {
     s1<- es.evaluate(objective, s)
 
     ## -- Save the best iteration value
-    estimates$addIterationBest(iteration, s1[iteration,])
+    estimates$addIterationBest(iteration, s1[1,])
 
     s0<- rbind(s0,s1)
     s0<- s0[with(s0,order(fitness)),]
@@ -2282,6 +2285,24 @@ xmeanci2<- function(x, alpha=0.95) {
   c(avg-e, avg+e)
 }
 
+#' @title random.whell
+#'
+#' @description A simple randon seed generator
+#'
+#' @return A random number for seeding
+#' @export
+random.wheel<- function() {
+  set.seed(as.numeric(format(Sys.time(), "%OS3")) * 1000)
+  wheel<- runif(1,1,10^6)
+  for(i in 1:wheel) {
+    runif(1)
+    if(runif(1) < runif(1)) {
+      v<- runif(1,1,.Machine$integer.max)
+      break
+    }
+  }
+  v
+}
 
 #' @title fixdfcolumns
 #'
