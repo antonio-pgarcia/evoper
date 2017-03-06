@@ -2297,7 +2297,7 @@ random.wheel<- function() {
   for(i in 1:wheel) {
     runif(1)
     if(runif(1) < runif(1)) {
-      v<- runif(1,1,.Machine$integer.max)
+      v<- trunc(runif(1,1,.Machine$integer.max * 10^-3))
       break
     }
   }
@@ -2409,15 +2409,18 @@ scatterplotlothelper<- function(d, x, y, z, title=NULL) {
 #' @description Simple helper for ploting histograms
 #'
 #' @param d A data frame.
-#' @param x A string with the dataframe column name for x axis
-#' @param y A string with the dataframe column name for y axis
-#' @param z A string with the dataframe column name for z axis
+#' @param x A string with the dataframe column name for x axis.
+#' @param y A string with the dataframe column name for y axis.
+#' @param z A string with the dataframe column name for z axis.
+#' @param nbins The number bins. The default is 32.
+#' @param binwidth The binwidths for 'kde2d'. Can be an scalar or a vector.
+#' @param points The number of grid points. Can be an scalar or a vector.
 #'
 #' @importFrom ggplot2 ggplot aes_string geom_density2d stat_density2d stat_contour
 #' @importFrom ggplot2 ggtitle theme element_text scale_fill_gradient facet_wrap stat_summary2d
 #' @importFrom ggplot2 stat_summary_2d scale_alpha facet_grid xlim ylim
 #' @export
-contourplothelper<- function(d, x, y, z) {
+contourplothelper<- function(d, x, y, z, nbins=32, binwidth=c(10,10), points=c(300,300), title=NULL) {
   d<- as.data.frame(d)
   d<- fixdfcolumns(d,cols = c(x, y, z),skip = FALSE)
 
@@ -2425,9 +2428,13 @@ contourplothelper<- function(d, x, y, z) {
   d<- d[!duplicated(d[,c(x,y)]),]
   d<- d[!duplicated(d[,c(z)]),]
 
-  d$title<- sprintf("solution landscape for %s ~ %s, %s", z, x, y)
+  if(is.null(title)) {
+    d$title<- sprintf("%s ~ %s, %s", z, x, y)
+  } else {
+    d$title<- title
+  }
   p<- with(d,ggplot(d, aes_string(x=x, y=y, z=z)))
-  p<- p + stat_density2d(data = d, aes_string(fill = "..level..", alpha = "..level.."), size = 0.01, bins = 8, geom = 'polygon', n = 300)
+  p<- p + stat_density2d(data = d, aes_string(fill = "..level..", alpha = "..level.."), size = 0.01, bins = nbins, geom = 'polygon', h = binwidth, n = points)
   p<- p + scale_fill_gradient(low = "green", high = "red")
   p<- p + scale_alpha(range = c(0.15, 0.30), guide = FALSE)
   p<- p + facet_grid(. ~ title) + theme(legend.position = "none", plot.title = element_text(hjust = 0.5))

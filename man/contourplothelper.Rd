@@ -4,16 +4,23 @@
 \alias{contourplothelper}
 \title{contourplothelper}
 \usage{
-contourplothelper(d, x, y, z)
+contourplothelper(d, x, y, z, nbins = 32, binwidth = c(10, 10),
+  points = c(300, 300))
 }
 \arguments{
 \item{d}{A data frame.}
 
-\item{x}{A string with the dataframe column name for x axis}
+\item{x}{A string with the dataframe column name for x axis.}
 
-\item{y}{A string with the dataframe column name for y axis}
+\item{y}{A string with the dataframe column name for y axis.}
 
-\item{z}{A string with the dataframe column name for z axis}
+\item{z}{A string with the dataframe column name for z axis.}
+
+\item{nbins}{The number bins. The default is 32.}
+
+\item{binwidth}{The binwidths for 'kde2d'. Can be an scalar or a vector.}
+
+\item{points}{The number of grid points. Can be an scalar or a vector.}
 }
 \description{
 Simple helper for ploting histograms
