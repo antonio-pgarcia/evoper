@@ -58,7 +58,7 @@ compare.algorithms1<- function(F, seeds= c(27, 2718282, 36190727, 3141593, -9119
 #' @import plyr
 #' @export
 summarize.comp1<- function(mydata) {
-  ddply(mydata, .(algorithm), summarize,  evals=mean(total_evals), convergence=mean(converged), fitness=mean(fitness))
+  with(mydata,ddply(mydata, .(algorithm), summarize,  evals=mean(total_evals), convergence=mean(converged), fitness=mean(fitness)))
 }
 
 #' @title show.comp1

@@ -1,8 +1,8 @@
 Package: evoper
 Type: Package
 Title: Evolutionary Parameter Estimation for 'Repast Simphony' Models
-Version: 0.3.0
-Date: 2016-11-06
+Version: 0.4.0
+Date: 2017-03-14
 Authors@R: c(
     person("Antonio", "Prestes Garcia", email = "antonio.pgarcia@alumnos.upm.es", role = c("aut","cre")),
     person("Alfonso", " Rodriguez-Paton", email = "arpaton@fi.upm.es", role = c("aut","ths")))
@@ -21,3 +21,4 @@ Depends:
 Imports:
     methods,  futile.logger, boot, reshape, ggplot2, deSolve, plot3D, plyr
 RoxygenNote: 5.0.1
+Suggests: testthat
