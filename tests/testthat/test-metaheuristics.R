@@ -3,6 +3,8 @@ library(evoper)
 context("Metaheuristic verification")
 
 test_that("PSO metaheuristic results", {
+  skip_on_cran()
+
   level<- elog.level()
   elog.level("ERROR")
 
@@ -25,6 +27,8 @@ test_that("PSO metaheuristic results", {
 
 
 test_that("SAA metaheuristic results", {
+  skip_on_cran()
+
   level<- elog.level()
   elog.level("ERROR")
 
@@ -47,6 +51,8 @@ test_that("SAA metaheuristic results", {
 
 
 test_that("ACOR metaheuristic results", {
+  skip_on_cran()
+
   level<- elog.level()
   elog.level("ERROR")
 
@@ -69,6 +75,8 @@ test_that("ACOR metaheuristic results", {
 
 
 test_that("EES1 metaheuristic results", {
+  skip_on_cran()
+
   level<- elog.level()
   elog.level("ERROR")
 

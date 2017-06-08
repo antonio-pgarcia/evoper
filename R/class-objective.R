@@ -28,6 +28,7 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
     object = 'ANY',
     objective = 'function',
     replicates = 'numeric',
+    objective.defaults = 'ANY',
     parameters = 'ANY',
     value = 'ANY',
     rawdata = 'ANY',
@@ -42,6 +43,7 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
       object<<- NULL
       objective<<- funct
       replicates<<- 1
+      objective.defaults<<- NULL
       parameters<<- NULL
       value<<- NULL
       rawdata<<- NULL
@@ -129,6 +131,15 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
 
     ParametersSize = function() {
       length(parameters[,1])
+    },
+
+
+    defaults = function(v = NULL) {
+      if(!is.null(v)) {
+        objective.defaults<<- v
+      } else {
+        objective.defaults
+      }
     },
 
     RawData = function(v = NULL) {
@@ -235,10 +246,17 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
 
       ## Initialization of Repast Model instance
       rrepast::Easy.Setup(directory)
-      model<<- rrepast::Model(directory,endAt,datasource,TRUE)
+      ##model<<- rrepast::Model(directory,endAt,datasource,TRUE)
+      my.model<- rrepast::Model(directory,endAt,datasource,TRUE)
+
+      ## --- Update if needed the default parameters
+      if(!is.null(defaults())) {
+        rrepast::UpdateDefaultParameters(my.model, defaults())
+      }
+
 
       ## Building up parameter set
-      p<- rrepast::GetSimulationParameters(model)
+      p<- rrepast::GetSimulationParameters(my.model)
 
       if(!is.null(swarm)){
         tmp<- p
@@ -246,7 +264,10 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
       }
 
       ## Evaluate model
-      object<<- RunExperiment(model,r=replicates,p, objective)
+      object<<- RunExperiment(my.model,r=replicates,p, objective)
+
+      ## Clean UP
+      Engine.Finish(my.model)
 
       ## Sum the objective output and change the column name
       object$output<<- col.sum(object$output)

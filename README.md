@@ -2,6 +2,8 @@
 
 Evolutionary Parameter Estimation for 'Repast Simphony' Models.
 
+[![Rdoc](http://www.rdocumentation.org/badges/version/rrepast)](http://www.rdocumentation.org/packages/rrepast)
+
 ## Description
 
 The EvoPER, Evolutionary Parameter Estimation for 'Repast Simphony'
