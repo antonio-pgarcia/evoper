@@ -2,7 +2,7 @@
 
 Evolutionary Parameter Estimation for 'Repast Simphony' Models.
 
-[![Rdoc](http://www.rdocumentation.org/badges/version/rrepast)](http://www.rdocumentation.org/packages/rrepast)
+[![Rdoc](http://www.rdocumentation.org/badges/version/evoper)](http://www.rdocumentation.org/packages/evoper)
 
 ## Description
 
