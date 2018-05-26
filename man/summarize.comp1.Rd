@@ -15,4 +15,3 @@ The summarized data
 \description{
 Provides as summary with averged values of experimental setup
 }
-

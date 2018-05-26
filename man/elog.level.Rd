@@ -15,4 +15,3 @@ The log level
 \description{
 Configure the current log level
 }
-

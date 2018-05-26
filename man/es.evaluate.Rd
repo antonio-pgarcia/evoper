@@ -20,4 +20,3 @@ The solution ordered by its fitness.
 For each element in solution 's' evaluate the respective
 fitness.
 }
-

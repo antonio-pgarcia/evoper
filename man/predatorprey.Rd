@@ -21,4 +21,3 @@ The ODE solution
 \description{
 The solver for Lotka-Volterra differential equation.
 }
-

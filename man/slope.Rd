@@ -20,4 +20,3 @@ The slope
 Simple function for calculate the slope on the ith element
 position
 }
-

@@ -18,4 +18,3 @@ The confidence interval for the mean
 Calculates confidence interval of mean for provided
 data with desired confidence level.
 }
-

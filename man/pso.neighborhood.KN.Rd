@@ -14,4 +14,3 @@ pso.neighborhood.KN(i, n)
 \description{
 Simple helper method for 'gbest' neighborhood
 }
-

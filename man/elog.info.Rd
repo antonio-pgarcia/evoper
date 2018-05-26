@@ -12,4 +12,3 @@ elog.info(...)
 \description{
 Wrapper for logging info messages.
 }
-

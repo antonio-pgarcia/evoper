@@ -23,4 +23,3 @@ The Cigar function of four variables for testing optimization
 methods. The global optima for the function is given by
 xi = 0, forall i E {1...N}, f(x) = 0.
 }
-

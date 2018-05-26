@@ -17,4 +17,3 @@ geometric standard deviation for data
 \description{
 Simple implementation for geometric standard deviation
 }
-

@@ -45,4 +45,3 @@ models.
 [1] Kirkpatrick, S., Gelatt, C. D., & Vecchi, M. P. (1983).
 Optimization by Simulated Annealing. Science, 220(4598).
 }
-

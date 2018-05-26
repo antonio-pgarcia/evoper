@@ -15,6 +15,7 @@
 #' @description A simple class for encapsulating the return of metaheuristic
 #' methods
 #'
+#' @importFrom data.table rbindlist
 #' @importFrom methods new
 #' @importFrom boot boot boot.ci
 #' @export Estimates
@@ -46,7 +47,13 @@ Estimates<- setRefClass("Estimates",
     },
 
     addIterationBest = function(iteration, solution) {
-      iteration.best<<- rbind(iteration.best, c(iteration,solution))
+      #iteration.best<<- rbind(iteration.best, c(iteration,solution))
+      if(length(iteration.best) == 0) {
+        iteration.best<<- c(setNames(iteration,"iteration"),solution)
+      } else {
+        iteration.best<<- rbindlist(list(iteration.best, c(setNames(iteration,"iteration"),solution)), use.names=TRUE)
+      }
+
     },
 
     getIterationBest = function() {
@@ -58,10 +65,12 @@ Estimates<- setRefClass("Estimates",
 
       if(m > 1) {
         for(i in 1:m) {
-          visited.space<<- rbind(visited.space, solution[i,])
+          visited.space<<- rbindlist(list(visited.space,solution[i,]), use.names=TRUE)
+          #visited.space<<- rbind(visited.space, solution[i,])
         }
       } else {
-        visited.space<<- rbind(visited.space, solution)
+        visited.space<<- rbindlist(list(visited.space, solution), use.names=TRUE)
+        #visited.space<<- rbind(visited.space, solution)
       }
 
     },

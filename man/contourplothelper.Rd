@@ -27,4 +27,3 @@ contourplothelper(d, x, y, z, nbins = 32, binwidth = c(10, 10),
 \description{
 Simple helper function for countour plots
 }
-

@@ -19,4 +19,3 @@ The buffer b plus the element v minus the least recently added element
 \description{
 Simple implementation of a circular buffer.
 }
-

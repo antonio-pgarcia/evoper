@@ -146,6 +146,10 @@ extremize<- function(type, objective, options = NULL) {
       optimization.fun<- abm.ees2
     },
 
+    tabu={
+      optimization.fun<- abm.tabu
+    },
+
     {
       stop("Invalid optimization function!")
     }

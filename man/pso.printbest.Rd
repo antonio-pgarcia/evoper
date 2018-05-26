@@ -18,4 +18,3 @@ pso.printbest(objective, particles, generation, title)
 \description{
 Shows the best particle of each of simulated generations
 }
-

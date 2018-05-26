@@ -2,8 +2,8 @@
 % Please edit documentation in R/class-objective.R
 \docType{class}
 \name{PlainFunction-class}
-\alias{PlainFunction}
 \alias{PlainFunction-class}
+\alias{PlainFunction}
 \title{PlainFunction}
 \description{
 PlainFunction Class

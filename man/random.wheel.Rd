@@ -12,4 +12,3 @@ A random number for seeding
 \description{
 A simple randon seed generator
 }
-

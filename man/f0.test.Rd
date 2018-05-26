@@ -18,4 +18,3 @@ f0.test(x1, x2, x3, x4)
 \description{
 Simple test function f(1,2,3,4) = 0
 }
-

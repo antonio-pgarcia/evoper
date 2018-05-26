@@ -2,8 +2,8 @@
 % Please edit documentation in R/class-objective.R
 \docType{class}
 \name{ObjectiveFunction-class}
-\alias{ObjectiveFunction}
 \alias{ObjectiveFunction-class}
+\alias{ObjectiveFunction}
 \title{ObjectiveFunction class}
 \description{
 The base class for optimization functions.
@@ -19,4 +19,5 @@ The base class for optimization functions.
 
 \item{\code{value}}{The results from objective function}
 }}
+
 

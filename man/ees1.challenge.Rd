@@ -15,4 +15,3 @@ ees1.challenge(solution, objective)
 Repeat the evalution of best solution to tacke with
 variability.
 }
-

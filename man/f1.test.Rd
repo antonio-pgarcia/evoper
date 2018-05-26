@@ -12,4 +12,3 @@ f1.test(x)
 \description{
 Simple test function f(c(1,2,3,4)) = 0
 }
-

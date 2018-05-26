@@ -2,8 +2,8 @@
 % Please edit documentation in R/class-options.R
 \docType{class}
 \name{Options-class}
-\alias{Options}
 \alias{Options-class}
+\alias{Options}
 \title{Options}
 \description{
 The base class for the options for the optimization metaheuristics
@@ -17,4 +17,5 @@ The base class for the options for the optimization metaheuristics
 
 \item{\code{container}}{The object holding the configuration otions}
 }}
+
 

@@ -16,4 +16,3 @@ The weight vector
 Helper function for extracting the 'W' function evaluations
 from archive ACOr 'T'
 }
-

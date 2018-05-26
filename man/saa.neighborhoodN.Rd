@@ -20,4 +20,3 @@ The neighbor of solution of S
 Generates neighbor solutions perturbing all parameters from current
 solution \code{S}.
 }
-

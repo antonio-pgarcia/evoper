@@ -17,4 +17,3 @@ ees1.selection(s0, s1, kkappa)
 Select the elements with best fitness but accept uphill
 moves with probability 'kkappa'.
 }
-

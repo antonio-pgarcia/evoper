@@ -15,4 +15,3 @@ geometric mean for data
 \description{
 Simple implementation for geometric mean
 }
-

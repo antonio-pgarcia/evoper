@@ -1,11 +1,12 @@
 Package: evoper
 Type: Package
 Title: Evolutionary Parameter Estimation for 'Repast Simphony' Models
-Version: 0.4.0
-Date: 2017-03-14
+Version: 0.5.0
+Date: 2018-05-26
 Authors@R: c(
     person("Antonio", "Prestes Garcia", email = "antonio.pgarcia@alumnos.upm.es", role = c("aut","cre")),
     person("Alfonso", " Rodriguez-Paton", email = "arpaton@fi.upm.es", role = c("aut","ths")))
+Author: Antonio Prestes Garcia [aut, cre], Alfonso Rodriguez-Paton [aut, ths]
 Maintainer: Antonio Prestes Garcia <antonio.pgarcia@alumnos.upm.es>
 URL: https://github.com/antonio-pgarcia/evoper
 BugReports: https://github.com/antonio-pgarcia/evoper/issues
@@ -19,6 +20,6 @@ LazyData: TRUE
 Depends:
     rrepast
 Imports:
-    methods,  futile.logger, boot, reshape, ggplot2, deSolve, plot3D, plyr
-RoxygenNote: 5.0.1
+    methods,  futile.logger, boot, reshape, ggplot2, deSolve, plot3D, plyr, data.table
+RoxygenNote: 6.0.1
 Suggests: testthat

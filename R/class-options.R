@@ -229,6 +229,27 @@ OptionsEES2<- setRefClass("OptionsEES2", contains = "Options",
   )
 )
 
+#' @title OptionsTS
+#'
+#' @description Options for Tabu search optimization metaheuristic
+#'
+#' @importFrom methods new
+#' @export OptionsTS
+#' @exportClass OptionsTS
+OptionsTS<- setRefClass("OptionsTS", contains = "Options",
+
+  methods = list(
+
+    initialize = function() {
+
+      callSuper()
+      setType("tabu")
+      setValue("N",16)
+      neighborhoodFunction(pso.neighborhood.K4)
+    }
+
+  )
+)
 
 #' @title OptionsFactory
 #'
@@ -250,6 +271,7 @@ OptionsFactory<- function(type, v=NULL) {
       acor= { v<- OptionsACOR$new() },
       ees1= { v<- OptionsEES1$new() },
       ees2= { v<- OptionsEES2$new() },
+      tabu= { v<- OptionsTS$new() },
       { stop("Invalid optimization function!") }
     )
   }

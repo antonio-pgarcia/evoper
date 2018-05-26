@@ -2,8 +2,8 @@
 % Please edit documentation in R/class-options.R
 \docType{class}
 \name{OptionsPSO-class}
-\alias{OptionsPSO}
 \alias{OptionsPSO-class}
+\alias{OptionsPSO}
 \title{OptionsPSO}
 \description{
 Options for PSO optimization metaheuristic

@@ -11,7 +11,7 @@ initSolution(parameters, N = 20, sampling = "mcs")
 
 \item{N}{The size of Solution population}
 
-\item{sampling}{The population sampling scheme (mcs|lhs|ffs)}
+\item{sampling}{The population sampling scheme, namelly <mcs|lhs|ffs> standing respectively for montecarlo sampling, latin hypercube sampling and full factorial sampling}
 }
 \value{
 A random set of solutions
@@ -21,4 +21,3 @@ Creates the initial Solution population
 taking into account the lower an upper bounds of
 provided experiment factors.
 }
-

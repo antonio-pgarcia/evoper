@@ -15,4 +15,3 @@ The solution matrix
 \description{
 Helper function for extracting solution 'S' from archive 'T'
 }
-

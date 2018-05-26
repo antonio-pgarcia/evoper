@@ -12,4 +12,3 @@ f1.rosenbrock2(x)
 \description{
 Two variable Rosenbrock function, where f(c(1,1)) = 0
 }
-

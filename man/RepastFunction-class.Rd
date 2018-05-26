@@ -2,8 +2,8 @@
 % Please edit documentation in R/class-objective.R
 \docType{class}
 \name{RepastFunction-class}
-\alias{RepastFunction}
 \alias{RepastFunction-class}
+\alias{RepastFunction}
 \title{RepastFunction}
 \description{
 RepastFunction class

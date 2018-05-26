@@ -14,4 +14,3 @@ f0.rosenbrock2(x1, x2)
 \description{
 Two variable Rosenbrock function, where f(1,1) = 0
 }
-

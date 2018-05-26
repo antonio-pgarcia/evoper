@@ -36,4 +36,3 @@ Networks (Vol. 4, pp. 1942-1948). IEEE.
 [2] Poli, R., Kennedy, J., & Blackwell, T. (2007). Particle swarm optimization.
 Swarm Intelligence, 1(1), 33-57.
 }
-

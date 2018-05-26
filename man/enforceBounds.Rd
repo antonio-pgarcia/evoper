@@ -17,4 +17,3 @@ The particle inside the valid limits
 \description{
 Checks if parameters fall within upper an lower bounds
 }
-

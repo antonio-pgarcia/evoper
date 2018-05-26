@@ -18,4 +18,3 @@ Options object
 Instantiate the Options class required for
 the specific metaheuristic method.
 }
-

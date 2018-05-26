@@ -2,8 +2,8 @@
 % Please edit documentation in R/class-options.R
 \docType{class}
 \name{OptionsSAA-class}
-\alias{OptionsSAA}
 \alias{OptionsSAA-class}
+\alias{OptionsSAA}
 \title{OptionsSAA}
 \description{
 Options for SAA method
@@ -13,4 +13,5 @@ Options for SAA method
 \describe{
 \item{\code{temperature}}{The temperature dacay function}
 }}
+
 

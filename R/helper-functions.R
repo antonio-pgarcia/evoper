@@ -19,7 +19,7 @@
 #'
 #' @param parameters The Objective Function parameter list
 #' @param N The size of Solution population
-#' @param sampling The population sampling scheme (mcs|lhs|ffs)
+#' @param sampling The population sampling scheme, namelly <mcs|lhs|ffs> standing respectively for montecarlo sampling, latin hypercube sampling and full factorial sampling
 #'
 #' @return A random set of solutions
 #'
@@ -209,14 +209,21 @@ enforceBounds<- function(particles, factors) {
   k<- rrepast::GetFactorsSize(factors)
   for(p in 1:nrow(particles)){
     for(i in 1:k) {
+      ## Adjust the bounds
       lb<- as.numeric(factors[i,"min"]);
       ub<- as.numeric(factors[i,"max"])
       if( particles[p,i] < lb || particles[p,i] > ub || is.na(particles[p,i])) {
         particles[p,i]<- runif(1,lb,ub)
       }
+
+      ## Cast the solution to an integer
+      forceint<- as.logical(factors[i,"int"])
+      if(forceint) {
+        particles[p,i]<- trunc(particles[p,i])
+      }
     }
   }
-  return(particles)
+  particles
 }
 
 

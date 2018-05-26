@@ -2,8 +2,8 @@
 % Please edit documentation in R/class-options.R
 \docType{class}
 \name{OptionsACOR-class}
-\alias{OptionsACOR}
 \alias{OptionsACOR-class}
+\alias{OptionsACOR}
 \title{OptionsACOR}
 \description{
 Options for ACOR method

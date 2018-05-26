@@ -18,4 +18,3 @@ of input parameters for the objective function. It can useful for
 studying the behavior of individual-based models with high
 variability in the output variables showing nonlinear behaviors.
 }
-

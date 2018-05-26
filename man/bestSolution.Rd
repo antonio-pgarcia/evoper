@@ -16,4 +16,3 @@ The best solution
 Given a set S of N solutions created with sortSolution, this function
 returns the best solution found.
 }
-

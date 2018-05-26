@@ -18,4 +18,3 @@ The best particle
 Search for the best particle solution which minimize
 the objective function.
 }
-

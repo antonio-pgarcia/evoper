@@ -14,4 +14,3 @@ sortSolution(s, f)
 \description{
 Sort solution by its respective fitness
 }
-

@@ -12,4 +12,3 @@ elog.error(...)
 \description{
 Wrapper for logging error messages.
 }
-

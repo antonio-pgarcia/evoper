@@ -16,4 +16,3 @@ A list with the average period and amplitude
 A naive approach for finding the period in a series
 of data points
 }
-

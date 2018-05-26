@@ -19,4 +19,3 @@ Calculates confidence interval of mean for provided
 data with desired confidence level. This functions uses bootstrap
 resampling scheme for estimanting the CI.
 }
-

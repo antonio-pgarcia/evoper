@@ -20,4 +20,3 @@ The neighbor of solution of S
 Generates neighbor solutions perturbing one parameter from current
 solution \code{S} picked randonly.
 }
-

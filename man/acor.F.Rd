@@ -16,4 +16,3 @@ The F matrix
 Helper function for extracting the 'F' function evaluations
 from archive ACOr 'T'
 }
-

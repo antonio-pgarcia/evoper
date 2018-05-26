@@ -16,4 +16,3 @@ ees1.mutation(solution, mates, p = 0.01)
 \description{
 Performs the mutation on generated solution
 }
-

@@ -17,4 +17,3 @@ Given a set S of N solutions created with sortSolution, this function
 returns the solution component. A solutions is a set of solutions and their associated
 fitness
 }
-

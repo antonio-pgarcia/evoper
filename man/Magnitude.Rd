@@ -15,4 +15,3 @@ The magnitude order
 \description{
 Calculates the magnitude order for a given value
 }
-

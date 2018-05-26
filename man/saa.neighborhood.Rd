@@ -21,4 +21,3 @@ The neighbor of solution S
 \description{
 Generates neighbor solutions for simulated annealing
 }
-

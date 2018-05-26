@@ -15,4 +15,3 @@ The size 'n' of a solution 's'
 \description{
 Helper function for getting the size of solution
 }
-

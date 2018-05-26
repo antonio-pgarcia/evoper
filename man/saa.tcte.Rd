@@ -17,4 +17,3 @@ The new temperature
 \description{
 Temperature function cte * t0
 }
-

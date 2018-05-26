@@ -17,4 +17,3 @@ A vector with all slopes
 \description{
 Calcule all slopes for the discrete x,y series
 }
-

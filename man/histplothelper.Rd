@@ -19,4 +19,3 @@ A ggplot2 plot object
 \description{
 Simple helper for ploting histograms
 }
-

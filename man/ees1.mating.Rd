@@ -17,4 +17,3 @@ This function 'mix' the elements present in the solution. The
 parameter 'mu' controls the intensity of mixing. Low values give preference
 to best solution components and high values make the values being select randomly.
 }
-

@@ -17,4 +17,3 @@ The particle greater than or equal to lower limit
 \description{
 Checks if parameters is greater than the lower bounds
 }
-

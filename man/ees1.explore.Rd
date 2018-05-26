@@ -17,4 +17,3 @@ ees1.explore(s, weight, p = 0.01)
 Explore the solution space on the neighborhood of
 solution 's' in order to find a new best.
 }
-

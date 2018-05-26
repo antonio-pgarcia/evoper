@@ -21,4 +21,3 @@ provided experiment factors. This method works by
 dividing the solution space into partitions of size 'd'
 and then creating a full factorial combination of partitions.
 }
-

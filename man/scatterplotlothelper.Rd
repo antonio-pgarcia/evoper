@@ -23,4 +23,3 @@ A scatter3D plot
 \description{
 Simple helper for ploting 3d scaterplots
 }
-

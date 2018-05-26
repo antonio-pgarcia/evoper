@@ -26,4 +26,3 @@ Simple wrapper for 'predatorprey.plot0' accepting the parameters as a list.
 }
 
 }
-

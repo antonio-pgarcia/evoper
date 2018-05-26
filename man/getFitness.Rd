@@ -18,4 +18,3 @@ The selected fitness entry
 Given a set S of N solutions created with sortSolution, this function
 returns the solution component fot the best solution.
 }
-

@@ -21,4 +21,3 @@ The data frame with converted column types.
 \description{
 Coerce dataframe columns to a specic type.
 }
-

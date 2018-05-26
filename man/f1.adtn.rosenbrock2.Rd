@@ -12,4 +12,3 @@ f1.adtn.rosenbrock2(x)
 \description{
 Two variable Rosenbrock function with random additive noise.
 }
-

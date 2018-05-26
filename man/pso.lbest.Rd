@@ -20,4 +20,3 @@ The lbes for i th particle
 Finds the lbest for the particle 'i' using the
 topology function given by the topology parameter.
 }
-

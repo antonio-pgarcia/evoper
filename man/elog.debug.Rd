@@ -12,4 +12,3 @@ elog.debug(...)
 \description{
 Wrapper for logging debug messages.
 }
-

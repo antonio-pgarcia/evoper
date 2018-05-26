@@ -17,4 +17,3 @@ The calculated constriction coefficient
 \description{
 Implementation of constriction coefficient
 }
-

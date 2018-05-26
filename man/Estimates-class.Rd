@@ -2,8 +2,8 @@
 % Please edit documentation in R/class-estimates.R
 \docType{class}
 \name{Estimates-class}
-\alias{Estimates}
 \alias{Estimates-class}
+\alias{Estimates}
 \title{Estimates}
 \description{
 A simple class for encapsulating the return of metaheuristic

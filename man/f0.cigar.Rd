@@ -20,4 +20,3 @@ xi = 0, forall i E {1...N}, f(x) = 0.
 \references{
 http://deap.gel.ulaval.ca/doc/dev/api/benchmarks.html
 }
-

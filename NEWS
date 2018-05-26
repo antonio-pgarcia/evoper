@@ -9,6 +9,21 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 
 
+## EvoPER [0.5.0] - 2018-05-26
+### Added
+- OptionsTS The option class for Tabu search algorithm
+- abm.tabu The EvoPER Tabu search implementation
+- abm.tabu.R New file containing the the tabu search implementation
+
+### Changed
+- extremize Changed the wrapper for supporting Tabu search
+- Class Estimates optimization replace rbind by data.table's rbindlist
+- ObjectiveFunction support for cast parameter to integer
+- enforceBouds support for cast parameter to integer
+
+### Fixed
+
+
 ## EvoPER [0.4.0] - 2017-03-14
 ### Added
 - f0.rosenbrockn Rosenbrock of N parameters for variadic input

@@ -15,4 +15,3 @@ pso.neighborhood.K2(i, n)
 The neighborhood function for a simple linear topology
 where every particle has k = 2 neighbors
 }
-

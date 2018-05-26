@@ -16,4 +16,3 @@ The best fitness value
 Given a set S of N solutions created with sortSolution, this function
 returns the fitness component fot the best solution.
 }
-

@@ -26,4 +26,3 @@ used for estimating the parameter values in order to produce
 oscilations with the desired period. It is not intended to be
 used directelly, the provided wrappers should be instead.
 }
-

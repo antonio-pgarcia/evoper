@@ -2,8 +2,8 @@
 % Please edit documentation in R/class-options.R
 \docType{class}
 \name{OptionsEES2-class}
-\alias{OptionsEES2}
 \alias{OptionsEES2-class}
+\alias{OptionsEES2}
 \title{OptionsEES2}
 \description{
 Options for Serial Dilutions method
@@ -13,4 +13,5 @@ Options for Serial Dilutions method
 \describe{
 \item{\code{dilutions}}{The desired dilutions}
 }}
+
 

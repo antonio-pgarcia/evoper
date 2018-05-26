@@ -27,4 +27,3 @@ Updated velocity
 \description{
 Calculates the PSO Velocity
 }
-

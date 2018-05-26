@@ -29,4 +29,3 @@ The function keeps the track of 'k' solotion in the archive.
 European Journal of Operational Research, 185(3), 1155-1173.
 http://doi.org/10.1016/j.ejor.2006.06.046
 }
-

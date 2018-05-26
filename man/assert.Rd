@@ -15,4 +15,3 @@ assert(expresion, string)
 The assert function stop the execution if the logical
 expression given by the parameter \code{expresion} is false.
 }
-

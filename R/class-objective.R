@@ -72,12 +72,12 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
       maximize<<- v
     },
 
-    Parameter = function(name, min, max) {
+    Parameter = function(name, min, max, forceint=FALSE) {
       assert(hasArg(name) && hasArg(min) && hasArg(min), "Please provide the required parameters")
       if(is.null(parameters)) {
-        parameters<<- rrepast::AddFactor(c(), name= name, min= min, max= max)
+        parameters<<- rrepast::AddFactor(c(), name= name, min= min, max= max, int= forceint)
       } else {
-        parameters<<- rrepast::AddFactor(parameters, name= name, min= min, max= max)
+        parameters<<- rrepast::AddFactor(parameters, name= name, min= min, max= max, int= forceint)
       }
     },
 

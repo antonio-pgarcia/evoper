@@ -16,4 +16,3 @@ The von neumann neighborhood function for
 a lattice-based topology where every particle
 has k = 4 neighbors
 }
-

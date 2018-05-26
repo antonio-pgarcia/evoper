@@ -14,4 +14,3 @@ ees1.recombination(solution, mates)
 \description{
 Performs the recombination on solution
 }
-
