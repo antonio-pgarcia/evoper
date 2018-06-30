@@ -69,7 +69,6 @@ abm.tabu<- function(objective, options= NULL) {
 
     s1<- generateSolution(objective$parameters, candsize)
 
-    #sortSolution
 
 
     ## --- Storing the best of this iteration
