@@ -223,7 +223,7 @@ OptionsEES2<- setRefClass("OptionsEES2", contains = "Options",
       setType("ees2")
       setValue("N", 20)            ## Solution size 100
       setValue("rho", 0.25)        ## Solution size 0.05
-      setValue("iterations", 30)   ## Total number of iterations 10
+      setValue("iterations", 30)   ## Total number of iterations
     }
 
   )
@@ -244,8 +244,10 @@ OptionsTS<- setRefClass("OptionsTS", contains = "Options",
 
       callSuper()
       setType("tabu")
-      setValue("N",16)
-      neighborhoodFunction(pso.neighborhood.K4)
+      setValue("N", 1)              ## Number of solutions
+      setValue("tabu_size", 16)     ## Tabu size
+      setValue("cand_size", 64)     ## Candidate solution size
+      setValue("iterations", 100)   ## Total number of iterations
     }
 
   )

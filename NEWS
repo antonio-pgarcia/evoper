@@ -14,12 +14,14 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - OptionsTS The option class for Tabu search algorithm
 - abm.tabu The EvoPER Tabu search implementation
 - abm.tabu.R New file containing the the tabu search implementation
+- generateSolution Generates combinatory solutions
 
 ### Changed
 - extremize Changed the wrapper for supporting Tabu search
 - Class Estimates optimization replace rbind by data.table's rbindlist
 - ObjectiveFunction support for cast parameter to integer
-- enforceBouds support for cast parameter to integer
+- enforceBounds support for cast parameter to integer
+- enforceBounds support for discrete levels
 
 ### Fixed
 

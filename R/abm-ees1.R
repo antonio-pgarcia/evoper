@@ -23,6 +23,15 @@
 #' @param objective An instance of ObjectiveFunction (or subclass) class \link{ObjectiveFunction}
 #' @param options An apropiate instance from a sublclass of \link{Options} class
 #'
+#' @examples \dontrun{
+#'  f<- PlainFunction$new(f0.rosenbrock2)
+#'
+#'  f$Parameter(name="x1",min=-100,max=100)
+#'  f$Parameter(name="x2",min=-100,max=100)
+#'
+#'  extremize("ees1", f)
+#' }
+#'
 #' @export
 abm.ees1<- function(objective, options= NULL) {
   ## Handling the heuristic specific options

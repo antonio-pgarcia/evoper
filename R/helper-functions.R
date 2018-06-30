@@ -42,6 +42,63 @@ initSolution<- function(parameters, N=20, sampling="mcs") {
   )
 }
 
+#' @title generateSolution
+#'
+#' @description Generates a problema solution using discrete leves
+#'
+#' @param parameters The Objective Function parameter list
+#' @param size The solution size
+#'
+#' @return The solution set
+#'
+#' @export
+generateSolution<- function(parameters, size) {
+  solution<- c()
+  for(i in 1:size) {
+    s<- c()
+    for(j in 1:nrow(parameters)){
+      #mylevels<- GetFactorLevels(parameters, parameters[[j,"name"]])
+      #s<- c(s, mylevels[trunc(runif(1,1,length(mylevels)))])
+      s<- c(s, sample(GetFactorLevels(parameters, parameters[[j,"name"]]),1))
+    }
+    solution<- rbind(solution,s)
+  }
+  solution<- as.data.frame(solution)
+  names(solution)<- parameters[,"name"]
+  rownames(solution) <- NULL
+  solution
+}
+
+#' @title pop
+#'
+#' @description pop an element
+#'
+#' @param x The element collection
+#'
+#' @return The element popped
+#'
+#' @export
+pop<- function(x) {
+  v<- tail(x,1)
+  eval.parent(substitute(x<- head(x,length(x)-1)))
+  v
+}
+
+#' @title push
+#'
+#' @description push an element
+#'
+#' @param x The collection of elements
+#' @param v The value to be pushed
+#'
+#' @return The collection of elements
+#'
+#' @export
+push<- function(x, v) {
+  eval.parent(substitute(x<- append(x,v)))
+  x
+}
+
 #' @title partSolutionSpace
 #'
 #' @description Creates the initial Solution population
@@ -209,6 +266,9 @@ enforceBounds<- function(particles, factors) {
   k<- rrepast::GetFactorsSize(factors)
   for(p in 1:nrow(particles)){
     for(i in 1:k) {
+      ## Check for levels and skip the enforce bounds logic
+      if(!is.null(GetFactorLevels(factors,factors[[i,"name"]]))) next
+
       ## Adjust the bounds
       lb<- as.numeric(factors[i,"min"]);
       ub<- as.numeric(factors[i,"max"])

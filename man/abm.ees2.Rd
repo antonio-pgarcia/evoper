@@ -18,3 +18,14 @@ of input parameters for the objective function. It can useful for
 studying the behavior of individual-based models with high
 variability in the output variables showing nonlinear behaviors.
 }
+\examples{
+\dontrun{
+ f<- PlainFunction$new(f0.rosenbrock2)
+
+ f$Parameter(name="x1",min=-100,max=100)
+ f$Parameter(name="x2",min=-100,max=100)
+
+ extremize("ees2", f)
+}
+
+}

@@ -17,14 +17,12 @@ method for parameter estimation of Individual-based models.
 }
 \examples{
 \dontrun{
- f<- RepastFunction$new("c:/usr/models/BactoSim(HaldaneEngine-1.0)","ds::Output",300)
+ f<- PlainFunction$new(f0.rosenbrock2)
 
- f$Parameter(name="cyclePoint",min=0,max=90)
- f$Parameter(name="conjugationCost",min=0,max=100)
- f$Parameter(name="pilusExpressionCost",min=0,max=100)
- f$Parameter(name="gamma0",min=1,max=10)
+ f$Parameter(name="x1",min=-100,max=100)
+ f$Parameter(name="x2",min=-100,max=100)
 
- abm.pso(f)
+ extremize("pso", f)
 }
 
 }

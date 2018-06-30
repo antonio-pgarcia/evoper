@@ -488,6 +488,71 @@ f0.griewank4<- function(x1, x2, x3, x4) {
   f0.griewank(c(x1, x2, x3, x4))
 }
 
+#' @title f0.ackley
+#'
+#' @description The ackley function of N variables for testing
+#' optimization methods. The global optima for the function is given by
+#' xi = 0, forall i E {1...N}, f(x) = 0.
+#' Domain xi E [-32.768, 32.768], for all i = 1, ..., d
+#'
+#' @param ... The variadic list of function variables.
+#'
+#' @return The function value
+#'
+#' @references
+#'
+#' https://www.sfu.ca/~ssurjano/ackley.html
+#'
+#' @export
+f0.ackley<- function(...) {
+  x<- list(...)
+  f1.ackley(unlist(x))
+}
+
+#' @title f1.ackley
+#'
+#' @description The ackley function of N variables for testing
+#' optimization methods. The global optima for the function is given by
+#' xi = 0, forall i E {1...N}, f(x) = 0.
+#' Domain xi E [-32.768, 32.768], for all i = 1, ..., d
+#'
+#' @param x The vector of function parameters
+#'
+#' @return The function value
+#'
+#' @references
+#'
+#' https://www.sfu.ca/~ssurjano/ackley.html
+#'
+#' @export
+f1.ackley<- function(x) {
+  a<- 20.0
+  b<- 0.2
+  c<- 2.0*pi
+  d<- length(x)
+
+  v<- (-a * exp(-b * sqrt( (1/d) * sum(x^2))) - exp((1/d) * sum(cos(c*x))) + a + exp(1))
+  ifelse(v < 10^-15, 0, v)
+}
+
+#' @title f0.ackley4
+#'
+#' @description The ackley function of four variables for testing optimization
+#' methods. The global optima for the function is given by
+#' xi = 0, forall i E {1...N}, f(x) = 0.
+#'
+#' @param x1 The first function variable
+#' @param x2 The second function variable
+#' @param x3 The third function variable
+#' @param x4 The fourth function variable
+#'
+#' @return The function value
+#'
+#' @export
+f0.ackley4<- function(x1, x2, x3, x4) {
+  f0.ackley(c(x1, x2, x3, x4))
+}
+
 #' @title predatorprey
 #'
 #' @description The solver for Lotka-Volterra differential equation.

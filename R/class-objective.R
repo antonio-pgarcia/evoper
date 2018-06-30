@@ -72,6 +72,15 @@ ObjectiveFunction<- setRefClass("ObjectiveFunction",
       maximize<<- v
     },
 
+    Parameter0 = function(...) {
+      assert(hasArg(name) && ((hasArg(min) && hasArg(min)) || hasArg(levels)), "Please provide the required parameters")
+      if(is.null(parameters)) {
+        parameters<<- rrepast::AddFactor0(factors=c(), ...)
+      } else {
+        parameters<<- rrepast::AddFactor0(factors=parameters, ...)
+      }
+    },
+
     Parameter = function(name, min, max, forceint=FALSE) {
       assert(hasArg(name) && hasArg(min) && hasArg(min), "Please provide the required parameters")
       if(is.null(parameters)) {

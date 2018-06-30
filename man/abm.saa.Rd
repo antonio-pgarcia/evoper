@@ -21,6 +21,15 @@ models.
 }
 \examples{
 \dontrun{
+ f<- PlainFunction$new(f0.rosenbrock2)
+
+ f$Parameter(name="x1",min=-100,max=100)
+ f$Parameter(name="x2",min=-100,max=100)
+
+ extremize("saa", f)
+}
+
+\dontrun{
  ## A Repast defined function
  f<- RepastFunction$new("/usr/models/BactoSim(HaldaneEngine-1.0)","ds::Output",300)
 
