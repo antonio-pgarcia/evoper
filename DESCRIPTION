@@ -2,7 +2,7 @@ Package: evoper
 Type: Package
 Title: Evolutionary Parameter Estimation for 'Repast Simphony' Models
 Version: 0.5.0
-Date: 2018-05-26
+Date: 2018-06-30
 Authors@R: c(
     person("Antonio", "Prestes Garcia", email = "antonio.pgarcia@alumnos.upm.es", role = c("aut","cre")),
     person("Alfonso", " Rodriguez-Paton", email = "arpaton@fi.upm.es", role = c("aut","ths")))
