@@ -15,6 +15,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - abm.tabu The EvoPER Tabu search implementation
 - abm.tabu.R New file containing the the tabu search implementation
 - generateSolution Generates combinatory solutions
+- pop.last Pop the last element from list
+- pop.first Pop the first element from list
+- push Push an element to a list
+- searchrow Search data on a matrix
+- paramconverter Convert parameter from continuous to discrete and vice versa
 
 ### Changed
 - extremize Changed the wrapper for supporting Tabu search
@@ -22,6 +27,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - ObjectiveFunction support for cast parameter to integer
 - enforceBounds support for cast parameter to integer
 - enforceBounds support for discrete levels
+- abd.pso added paramconverter
+- abd.acor added paramconverter
+- abd.saa added paramconverter
+- abd.ees1 added paramconverter
+- abd.ees2 added paramconverter
 
 ### Fixed
 

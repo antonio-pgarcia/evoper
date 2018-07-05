@@ -15,6 +15,10 @@ The base class for the options for the optimization metaheuristics
 
 \item{\code{neighborhood}}{The neighborhood function for population methods}
 
+\item{\code{discrete}}{Flag indicating that and specific algorithm is discrete or continuous}
+
+\item{\code{nlevelz}}{Default value for generating parameter levels when range is provided, default value is 5}
+
 \item{\code{container}}{The object holding the configuration otions}
 }}
 

@@ -61,6 +61,11 @@
 abm.saa<- function(objective, options= NULL) {
   ## Handling the heuristic specific options
   options<- OptionsFactory("saa", options)
+  elog.info("Options(%s): %s", options$getType(), options$toString())
+
+  ## --- Adjusting parameter types
+  parameterz<- paramconverter(objective$parameters, options$isDiscrete(), options$getLevels())
+  objective$parameters<- parameterz
 
   ## --- Creating the estimation object for returning results
   estimates<- Estimates$new()

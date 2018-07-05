@@ -38,6 +38,10 @@ abm.ees1<- function(objective, options= NULL) {
   options<- OptionsFactory("ees1", options)
   elog.info("Options(%s): %s", options$getType(), options$toString())
 
+  ## --- Adjusting parameter types
+  parameterz<- paramconverter(objective$parameters, options$isDiscrete(), options$getLevels())
+  objective$parameters<- parameterz
+
   ## --- Creating the estimation object for returning results
   estimates<- Estimates$new()
 
