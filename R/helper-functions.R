@@ -120,17 +120,17 @@ push<- function(x, v) {
 
 #' @title searchrow
 #'
-#' @description Search data on a matrix
+#' @description Search for a value value on a matrix
 #'
-#' @param data The matrix containing the dataset
+#' @param ddata The matrix containing the dataset
 #' @param value The value to search for
 #'
 #' @return Boolean TRUE for those indexes matching value
 #'
 #' @export
-searchrow<- function(data, value) {
-  assert(ncol(data) == length(value), "Data dimensions doesn't match!")
-  as.logical(apply(data, 1, function(x, v) {all(x == rbind(v))},v=value))
+searchrow<- function(ddata, value) {
+  assert(ncol(ddata) == length(value), "Data dimensions doesn't match!")
+  as.logical(apply(ddata, 1, function(x, v) {all(x == rbind(v))},v=value))
 }
 
 

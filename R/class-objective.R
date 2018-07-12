@@ -294,3 +294,81 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
       print(paste("Simulation time is .... [",endAt,"]"))
     })
 )
+
+
+#' @title NetLogoFunction
+#'
+#' @description NetLogoFunction class
+#'
+#' @importFrom methods new
+#' @export NetLogoFunction
+#' @exportClass NetLogoFunction
+NetLogoFunction<- setRefClass("NetLogoFunction", contains = "ObjectiveFunction",
+
+  fields = list(
+    model = 'ANY',
+    directory = 'character',
+    datasource = 'character',
+    endAt = 'numeric'
+  ),
+
+  methods = list(
+
+    initialize = function(d= NULL, ds= NULL, t= NULL, o= NULL) {
+      if(is.null(o)) {
+        o<- objective
+      } else {
+        directory<<- d
+        datasource<<- ds
+        endAt<<- t
+      }
+
+      callSuper(o)
+    },
+
+
+    Evaluate = function(swarm) {
+      callSuper(swarm)
+
+      ## Initialization of Repast Model instance
+      rrepast::Easy.Setup(directory)
+      ##model<<- rrepast::Model(directory,endAt,datasource,TRUE)
+      my.model<- rrepast::Model(directory,endAt,datasource,TRUE)
+
+      ## --- Update if needed the default parameters
+        if(!is.null(defaults())) {
+        rrepast::UpdateDefaultParameters(my.model, defaults())
+      }
+
+      ## Building up parameter set
+      p<- rrepast::GetSimulationParameters(my.model)
+
+      if(!is.null(swarm)) {
+        tmp<- p
+        p<- rrepast::BuildParameterSet(swarm, tmp)
+      }
+
+      ## Evaluate model
+      object<<- RunExperiment(my.model,r=replicates,p, objective)
+
+      ## Clean UP
+      Engine.Finish(my.model)
+
+      ## Sum the objective output and change the column name
+      object$output<<- col.sum(object$output)
+      n<- names(object$output)
+      names(object$output)<<- replace(n, which(n == "total"),c("fitness"))
+
+      ## Store the available model's raw data
+      RawData(object)
+      Value(object$output)
+    },
+
+    show = function() {
+      print(paste("Model directory is .... [",directory,"]"))
+      print(paste("Model datasource is ... [",datasource,"]"))
+      print(paste("Simulation time is .... [",endAt,"]"))
+    })
+
+)
+

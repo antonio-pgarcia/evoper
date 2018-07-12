@@ -49,7 +49,6 @@ abm.pso<- function(objective, options = NULL) {
   ## --- Adjusting parameter types
   parameterz<- paramconverter(objective$parameters, options$isDiscrete(), options$getLevels())
   objective$parameters<- parameterz
-  print(objective$parameters)
 
   ## --- Creating the estimation object for returning results
   estimates<- Estimates$new()
