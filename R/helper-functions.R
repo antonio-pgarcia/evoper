@@ -51,6 +51,8 @@ initSolution<- function(parameters, N=20, sampling="mcs") {
 #'
 #' @return The solution set
 #'
+#' @importFrom rrepast GetFactorLevels
+#'
 #' @export
 generateSolution<- function(parameters, size) {
   solution<- c()
@@ -76,6 +78,8 @@ generateSolution<- function(parameters, size) {
 #' @param x The element collection
 #'
 #' @return The last element added to list LIFO
+#'
+#' @importFrom utils tail
 #'
 #' @export
 pop.last<- function(x) {

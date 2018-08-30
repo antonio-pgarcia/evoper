@@ -2,7 +2,7 @@ Package: evoper
 Type: Package
 Title: Evolutionary Parameter Estimation for 'Repast Simphony' Models
 Version: 0.5.0
-Date: 2018-06-30
+Date: 2018-08-30
 Authors@R: c(
     person("Antonio", "Prestes Garcia", email = "antonio.pgarcia@alumnos.upm.es", role = c("aut","cre")),
     person("Alfonso", " Rodriguez-Paton", email = "arpaton@fi.upm.es", role = c("aut","ths")))
@@ -10,16 +10,18 @@ Author: Antonio Prestes Garcia [aut, cre], Alfonso Rodriguez-Paton [aut, ths]
 Maintainer: Antonio Prestes Garcia <antonio.pgarcia@alumnos.upm.es>
 URL: https://github.com/antonio-pgarcia/evoper
 BugReports: https://github.com/antonio-pgarcia/evoper/issues
-Description: The EvoPER, Evolutionary Parameter Estimation for 'Repast Simphony'
-    Agent-Based framework (<https://repast.github.io/>), provides optimization
-    driven parameter estimation methods based on evolutionary computation
-    techniques which could be more efficient and require, in some cases,
-    fewer model evaluations than other alternatives relying on experimental design.
+Description: The EvoPER, Evolutionary Parameter Estimation for Individual-based Models is an extensible 
+      package providing optimization driven parameter estimation methods using metaheuristics  and 
+      evolutionary computation techniques (Particle Swarm Optimization, Simulated Annealing, Ant Colony Optimization 
+      for continuous domains, Tabu Search, Evolutionary Strategies, ...)  which could be more efficient and require, 
+      in some cases, fewer model evaluations than alternatives relying on experimental design.  Currently there 
+      are built in support for models developed with 'Repast Simphony'  Agent-Based framework (<https://repast.github.io/>)  
+      and with NetLogo (<https://ccl.northwestern.edu/netlogo/>) which are the most used frameworks for Agent-based modeling. 
 License: MIT + file LICENSE
 LazyData: TRUE
 Depends:
     rrepast
 Imports:
-    methods,  futile.logger, boot, reshape, ggplot2, deSolve, plot3D, plyr, data.table, RNetLogo
+    methods,  futile.logger, boot, reshape, ggplot2, deSolve, plot3D, plyr, data.table, utils, RNetLogo
 RoxygenNote: 6.0.1
 Suggests: testthat

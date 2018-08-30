@@ -34,10 +34,10 @@
 #'
 #' @references
 #'
-#' [1] Fred Glover (1989). "Tabu Search – Part 1". ORSA Journal on Computing,
-#' 190–206. doi:10.1287/ijoc.1.3.190.
-#' [2] Fred Glover (1990). "Tabu Search – Part 2". ORSA Journal on Computing,
-#' 4–32. doi:10.1287/ijoc.2.1.4.
+#' [1] Fred Glover (1989). "Tabu Search - Part 1". ORSA Journal on Computing,
+#' 190-206. doi:10.1287/ijoc.1.3.190.
+#' [2] Fred Glover (1990). "Tabu Search - Part 2". ORSA Journal on Computing,
+#' 4-32. doi:10.1287/ijoc.2.1.4.
 #'
 #' @export
 abm.tabu<- function(objective, options= NULL) {
@@ -103,11 +103,12 @@ abm.tabu<- function(objective, options= NULL) {
 #'
 #' @description create neighbor solutions
 #'
+#' @param tabu The tabu list
 #' @param parameters The parameter set
 #' @param solution The current solution
 #' @param size The neigborhood size
 #'
-#' @return
+#' @return The neighbor for solution
 #'
 #' @export
 tabu.getNeighbors<- function(tabu, parameters, solution, size) {

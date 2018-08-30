@@ -288,11 +288,21 @@ RepastFunction<- setRefClass("RepastFunction", contains = "ObjectiveFunction",
       Value(object$output)
     },
 
+    toString = function() {
+      sstring<- c()
+      paste0(sstring, "Model path= ",directory,", ")
+      paste0(sstring, "Datasource=",datasource,", ")
+      paste0(sstring, "MaX iterations=",endAt)
+      sstring
+    },
+
     show = function() {
       print(paste("Model directory is .... [",directory,"]"))
       print(paste("Model datasource is ... [",datasource,"]"))
       print(paste("Simulation time is .... [",endAt,"]"))
     })
+
+
 )
 
 
@@ -307,52 +317,44 @@ NetLogoFunction<- setRefClass("NetLogoFunction", contains = "ObjectiveFunction",
 
   fields = list(
     model = 'ANY',
-    directory = 'character',
+    netlogodir = 'character',
+    modelfile = 'character',
     datasource = 'character',
-    endAt = 'numeric'
+    maxiterations = 'numeric'
   ),
 
   methods = list(
 
-    initialize = function(d= NULL, ds= NULL, t= NULL, o= NULL) {
-      if(is.null(o)) {
-        o<- objective
+    initialize = function(nldir= NULL, model= NULL, output= NULL, iterations= NULL, objfn= NULL) {
+      if(is.null(objfn)) {
+        objfn<- objective
       } else {
-        directory<<- d
-        datasource<<- ds
-        endAt<<- t
+        netlogodir<<- nldir
+        modelfile<<- model
+        datasource<<- output
+        maxiterations<<- iterations
       }
 
-      callSuper(o)
+      callSuper(objfn)
     },
 
 
     Evaluate = function(swarm) {
       callSuper(swarm)
 
-      ## Initialization of Repast Model instance
-      rrepast::Easy.Setup(directory)
-      ##model<<- rrepast::Model(directory,endAt,datasource,TRUE)
-      my.model<- rrepast::Model(directory,endAt,datasource,TRUE)
+      ## --- Model instantiation
+      my.model<- evoper::NLWrapper.Model(netlogodir, modelfile, datasource, maxiterations)
 
       ## --- Update if needed the default parameters
         if(!is.null(defaults())) {
-        rrepast::UpdateDefaultParameters(my.model, defaults())
-      }
-
-      ## Building up parameter set
-      p<- rrepast::GetSimulationParameters(my.model)
-
-      if(!is.null(swarm)) {
-        tmp<- p
-        p<- rrepast::BuildParameterSet(swarm, tmp)
+          evoper::NLWrapper.SetParameter(my.model, defaults())
       }
 
       ## Evaluate model
-      object<<- RunExperiment(my.model,r=replicates,p, objective)
+      object<<- evoper::NLWrapper.RunExperiment(my.model, r=1, swarm, objective)
 
       ## Clean UP
-      Engine.Finish(my.model)
+      evoper::NLWrapper.Shutdown(my.model)
 
       ## Sum the objective output and change the column name
       object$output<<- col.sum(object$output)
@@ -364,10 +366,13 @@ NetLogoFunction<- setRefClass("NetLogoFunction", contains = "ObjectiveFunction",
       Value(object$output)
     },
 
-    show = function() {
-      print(paste("Model directory is .... [",directory,"]"))
-      print(paste("Model datasource is ... [",datasource,"]"))
-      print(paste("Simulation time is .... [",endAt,"]"))
+    toString = function() {
+      sstring<- c()
+      paste0(sstring, "NetLogo path= ",netlogodir,", ")
+      paste0(sstring, "Model file=",modelfile,", ")
+      paste0(sstring, "Model datasource=",datasource,", ")
+      paste0(sstring, "MaX iterations=",maxiterations)
+      sstring
     })
 
 )
