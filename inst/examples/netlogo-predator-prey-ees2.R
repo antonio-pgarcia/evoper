@@ -1,8 +1,8 @@
 ##================================================================================
-## This file is part of EvoPER 
+## This file is part of EvoPER
 ##
 ## Example of parameter estimation for NetLogo models
-## 
+##
 ## (C) 2016, 2017, 2018 - Antonio Prestes Garcia <@>
 ## For license terms see DESCRIPTION and/or LICENSE
 ##
@@ -25,12 +25,12 @@ default<- c(`initial-number-sheep`=100, `initial-number-wolves`=50)
 
 ## Objective function
 my.objectivefn<- function(params, results) {
-  	p.sheep<- naiveperiod(results$`count sheep`)
-  	p.wolves<- naiveperiod(results$`count wolves`)
+  p.sheep<- naiveperiod(results$`count sheep`)
+  p.wolves<- naiveperiod(results$`count wolves`)
 	dsheep<- rrepast::AoE.NRMSD(p.sheep$period, 30)
-	dwolves<- rrepast::AoE.NRMSD(p.sheep$period, 30)   
-   	criteria<- cbind(dsheep,dwolves)
-   	return(criteria)
+	dwolves<- rrepast::AoE.NRMSD(p.sheep$period, 30)
+  criteria<- cbind(dsheep,dwolves)
+  return(criteria)
 }
 
 
