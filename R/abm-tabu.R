@@ -4,7 +4,7 @@
 ## (C)2016, 2017, 2018 Antonio Prestes Garcia <@>
 ## For license terms see DESCRIPTION and/or LICENSE
 ##
-## @file: abm-ts.R
+## @file: abm-tabu.R
 ##
 ## This file contains the Tabu Search optimization metaheuristic and
 ## its associated auxiliary functions.

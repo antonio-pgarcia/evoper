@@ -275,6 +275,29 @@ OptionsTS<- setRefClass("OptionsTS", contains = "Options",
   )
 )
 
+#' @title OptionsGA
+#'
+#' @description Options for Genetic Algorithm optimization metaheuristic
+#'
+#' @importFrom methods new
+#' @export OptionsGA
+#' @exportClass OptionsGA
+OptionsTS<- setRefClass("OptionsGA", contains = "Options",
+
+                        methods = list(
+
+                          initialize = function() {
+
+                            callSuper()
+                            setType("ga")
+                            setDiscrete(TRUE)
+                            setValue("N", 25)             ## Neighbor solution size
+                            setValue("iterations", 400)   ## Total number of iterations
+                          }
+
+                        )
+)
+
 #' @title OptionsFactory
 #'
 #' @description Instantiate the Options class required for
@@ -296,6 +319,7 @@ OptionsFactory<- function(type, v=NULL) {
       ees1= { v<- OptionsEES1$new() },
       ees2= { v<- OptionsEES2$new() },
       tabu= { v<- OptionsTS$new() },
+      ga  = { v<- OptionsGA$new() },
       { stop("Invalid optimization function!") }
     )
   }
