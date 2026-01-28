@@ -21,5 +21,5 @@ The function value
 \description{
 The schwefel function of N variables for testing optimization
 methods. The global optima for the function is given by
-xi = 420.96874636, forall i E {1...N}, f(x) = 0. The range of xi is [-500,500]
+xi = 420.96874636, forall i E \{1...N\}, f(x) = 0. The range of xi is [-500,500]
 }

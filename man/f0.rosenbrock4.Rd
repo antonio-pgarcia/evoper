@@ -21,5 +21,5 @@ The function value
 \description{
 The rosenbrock function of 4 variables for testing
 optimization methods. The global optima for the function is given by
-xi = 1, forall i E {1...N}, f(x) = 0.
+xi = 1, forall i E \{1...N\}, f(x) = 0.
 }

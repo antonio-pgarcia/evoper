@@ -4,8 +4,10 @@
 \alias{compare.algorithms1}
 \title{compare.algorithms1}
 \usage{
-compare.algorithms1(F, seeds = c(27, 2718282, 36190727, 3141593, -91190721,
-  -140743, 1321))
+compare.algorithms1(
+  F,
+  seeds = c(27, 2718282, 36190727, 3141593, -91190721, -140743, 1321)
+)
 }
 \arguments{
 \item{F}{The function to be tested}

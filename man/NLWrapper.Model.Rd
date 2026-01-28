@@ -21,9 +21,9 @@ This wrapper prepares the environment and instantiates the model
 \examples{
 \dontrun{
    rm(list=ls())
-   p<- "C:/Program Files/NetLogo 6.0.4/app"
+   p<- "C:/Program Files/NetLogo 6.1.1/app"
    output<- c("count sheep", "count wolves")
-   m<- file.path(nlpath, "models", "Sample Models", "Biology", model, "Wolf Sheep Predation.nlogo")
+   m<- file.path(p, "models", "Sample Models", "Biology", "Wolf Sheep Predation.nlogo")
    o<- NLWrapper.Model(p, m, output, 150)
 }
 

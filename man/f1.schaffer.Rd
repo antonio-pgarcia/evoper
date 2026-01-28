@@ -15,7 +15,7 @@ The function value
 \description{
 The schaffer function of N variables for testing
 optimization methods. The global optima for the function is given by
-xi = 0, forall i E {1...N}, f(x) = 0.
+xi = 0, forall i E \{1...N\}, f(x) = 0.
 }
 \references{
 http://deap.gel.ulaval.ca/doc/dev/api/benchmarks.html

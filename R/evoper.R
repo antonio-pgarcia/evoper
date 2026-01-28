@@ -15,11 +15,14 @@
 .onLoad<- function(libname, pkgname) {
   assign("pkg.globals", new.env(), envir=parent.env(environment()))
 
-  # The Random Seed. You may want to change this.
+  # The default Random Seed. You may want to change this.
   set.seed(exp(1)*10^6)
 
   # Internal variables
   assign("pkg.basedir", NA, pkg.globals)
+
+  # Set default package log log leve
+  assign("pkg.LogLevel", 'ERROR', pkg.globals)
 }
 
 #' @title assert
@@ -43,6 +46,28 @@ assert<- function(expresion, string) {
 ## ##################################################################
 
 
+#' @title GetLogLevel
+#'
+#' @description Get the current log level
+#'
+#' @return The log level
+#'
+#' @export
+GetLogLevel<- function() {
+  return(get("pkg.LogLevel", pkg.globals))
+}
+
+#' @title SetLogLevel
+#'
+#' @description Configure the current log level for the package
+#'
+#' @param level The log level (ERROR|WARN|INFO|DEBUG)
+#'
+#' @export
+SetLogLevel<- function(level) {
+  assign("pkg.LogLevel", level, pkg.globals)
+}
+
 #' @title elog.level
 #'
 #' @description Configure the current log level
@@ -51,13 +76,15 @@ assert<- function(expresion, string) {
 #'
 #' @return The log level
 #'
-#' @importFrom futile.logger flog.threshold
+#' @importFrom logging basicConfig
 #' @export
 elog.level<- function(level=NULL) {
   if(!is.null(level)) {
-    flog.threshold(level)
+    #flog.threshold(level)
+    SetLogLevel(level)
+    basicConfig(level = level)
   }
-  flog.threshold()
+  GetLogLevel()
 }
 
 #' @title elog.error
@@ -66,10 +93,11 @@ elog.level<- function(level=NULL) {
 #'
 #' @param ... Variable number of arguments including a format string.
 #'
-#' @importFrom futile.logger flog.error
+#' @importFrom logging logerror
 #' @export
 elog.error<- function(...) {
-  flog.error(...)
+  #flog.error(...)
+  logerror(...)
 }
 
 #' @title elog.info
@@ -78,10 +106,11 @@ elog.error<- function(...) {
 #'
 #' @param ... Variable number of arguments including a format string.
 #'
-#' @importFrom futile.logger flog.info
+#' @importFrom logging loginfo
 #' @export
 elog.info<- function(...) {
-  flog.info(...)
+  #log.info(...)
+  loginfo(...)
 }
 
 #' @title elog.debug
@@ -90,10 +119,11 @@ elog.info<- function(...) {
 #'
 #' @param ... Variable number of arguments including a format string.
 #'
-#' @importFrom futile.logger flog.debug
+#' @importFrom logging logdebug
 #' @export
 elog.debug<- function(...) {
-  flog.debug(...)
+  #log.debug(...)
+  logdebug(...)
 }
 
 
@@ -147,6 +177,11 @@ extremize<- function(type, objective, options = NULL) {
     },
 
     tabu={
+      optimization.fun<- abm.tabu
+    },
+
+    ga={
+      # Temporal for fixing futile.logging
       optimization.fun<- abm.tabu
     },
 

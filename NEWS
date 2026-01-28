@@ -8,6 +8,14 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [0.6.0] - 2026-01-28
+### Added
+
+### Changed
+- Replaced futile.log by logging library
+
+### Fixed
+
 
 ## EvoPER [0.5.0] - 2018-08-30
 ### Added

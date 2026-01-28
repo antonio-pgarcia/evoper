@@ -20,7 +20,7 @@ Gets the value of a model parameter
 \examples{
 \dontrun{
    rm(list=ls())
-   p<- "C:/Program Files/NetLogo 6.0.4/app"
+   p<- "C:/Program Files/NetLogo 6.1.1/app"
    m<- file.path(nlpath, "models", "Sample Models", "Biology", "Wolf Sheep Predation.nlogo")
    o<- NLWrapper.Model(p, m)
    v<- NLWrapper.GetParameter(o, c("initial-number-sheep"))

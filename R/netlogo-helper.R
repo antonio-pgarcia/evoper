@@ -4,7 +4,7 @@
 ## (C)2016, 2017, 2018 Antonio Prestes Garcia <@>
 ## For license terms see DESCRIPTION and/or LICENSE
 ##
-## @file: abm-ts.R
+## @file: netlogo-helper.R
 ##
 ## This file contains a simple integration wrapper for RNetLogo API
 ##================================================================================
@@ -34,9 +34,9 @@ NLWrapper.FindJar<- function(path) {
 #'
 #' @examples \dontrun{
 #'    rm(list=ls())
-#'    p<- "C:/Program Files/NetLogo 6.0.4/app"
+#'    p<- "C:/Program Files/NetLogo 6.1.1/app"
 #'    output<- c("count sheep", "count wolves")
-#'    m<- file.path(nlpath, "models", "Sample Models", "Biology", model, "Wolf Sheep Predation.nlogo")
+#'    m<- file.path(p, "models", "Sample Models", "Biology", "Wolf Sheep Predation.nlogo")
 #'    o<- NLWrapper.Model(p, m, output, 150)
 #' }
 #'
@@ -77,7 +77,7 @@ NLWrapper.Shutdown<- function(obj) {
 #'
 #' @examples \dontrun{
 #'    rm(list=ls())
-#'    p<- "C:/Program Files/NetLogo 6.0.4/app"
+#'    p<- "C:/Program Files/NetLogo 6.1.1/app"
 #'    m<- file.path(nlpath, "models", "Sample Models", "Biology", "Wolf Sheep Predation.nlogo")
 #'    o<- NLWrapper.Model(p, m)
 #'    v<- NLWrapper.GetParameter(o, c("initial-number-sheep"))
@@ -104,7 +104,7 @@ NLWrapper.GetParameter<- function(obj, name) {
 #'
 #' @examples \dontrun{
 #'    rm(list=ls())
-#'    p<- "C:/Program Files/NetLogo 6.0.4/app"
+#'    p<- "C:/Program Files/NetLogo 6.1.1/app"
 #'    m<- file.path(nlpath, "models", "Sample Models", "Biology", "Wolf Sheep Predation.nlogo")
 #'    o<- NLWrapper.Model(p, m)
 #' }
@@ -137,7 +137,7 @@ NLWrapper.SetRandomSeed<- function(obj, seed) {
 #' @param seed The collection of random seeds
 #'
 #' @examples \dontrun{
-#' p<- "C:/Program Files/NetLogo 6.0.4/app"
+#' p<- "C:/Program Files/NetLogo 6.1.1/app"
 #' m<- file.path(p, "models", "Sample Models", "Biology", "Wolf Sheep Predation.nlogo")
 #' output<- c("count sheep", "count wolves")
 #' o<- NLWrapper.Model(p, m, output, 150)
@@ -192,7 +192,7 @@ NLWrapper.Run<- function(obj, r=1, seed=c()) {
 #'
 #'    design<- AoE.LatinHypercube(factors=f)
 #'
-#'    p<- "C:/Program Files/NetLogo 6.0.4/app"
+#'    p<- "C:/Program Files/NetLogo 6.1.1/app"
 #'    m<- file.path(p, "models", "Sample Models", "Biology", "Wolf Sheep Predation.nlogo")
 #'    output<- c("count sheep", "count wolves")
 #'    o<- NLWrapper.Model(p, m, output, 150)

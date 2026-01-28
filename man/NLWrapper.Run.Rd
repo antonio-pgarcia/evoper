@@ -16,3 +16,14 @@ NLWrapper.Run(obj, r = 1, seed = c())
 \description{
 Executes a NetLogo Model using rNetLogo
 }
+\examples{
+\dontrun{
+p<- "C:/Program Files/NetLogo 6.1.1/app"
+m<- file.path(p, "models", "Sample Models", "Biology", "Wolf Sheep Predation.nlogo")
+output<- c("count sheep", "count wolves")
+o<- NLWrapper.Model(p, m, output, 150)
+v<- NLWrapper.Run(o)
+NLWrapper.Shutdown(o)}
+
+
+}

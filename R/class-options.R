@@ -282,20 +282,23 @@ OptionsTS<- setRefClass("OptionsTS", contains = "Options",
 #' @importFrom methods new
 #' @export OptionsGA
 #' @exportClass OptionsGA
-OptionsTS<- setRefClass("OptionsGA", contains = "Options",
+OptionsGA<- setRefClass("OptionsGA", contains = "Options",
 
-                        methods = list(
+  methods = list(
 
-                          initialize = function() {
+    initialize = function() {
 
-                            callSuper()
-                            setType("ga")
-                            setDiscrete(TRUE)
-                            setValue("N", 25)             ## Neighbor solution size
-                            setValue("iterations", 400)   ## Total number of iterations
-                          }
+      callSuper()
+      setType("ga")
+      setDiscrete(TRUE)
+      setValue("N", 25)             ## Population size
+      setValue("iterations", 400)   ## Total number of iterations
+      setValue("tournament_size", 10)
+      setValue("crossover_rate", 0.60)
+      setValue("mutation_rate", 0.10)
+    }
 
-                        )
+  )
 )
 
 #' @title OptionsFactory

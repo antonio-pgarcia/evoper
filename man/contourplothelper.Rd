@@ -4,8 +4,16 @@
 \alias{contourplothelper}
 \title{contourplothelper}
 \usage{
-contourplothelper(d, x, y, z, nbins = 32, binwidth = c(10, 10),
-  points = c(300, 300), title = NULL)
+contourplothelper(
+  d,
+  x,
+  y,
+  z,
+  nbins = 32,
+  binwidth = c(10, 10),
+  points = c(300, 300),
+  title = NULL
+)
 }
 \arguments{
 \item{d}{A data frame.}

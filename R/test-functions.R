@@ -120,7 +120,7 @@ f1.nlnn.rosenbrock2<- function(x) { f0.nlnn.rosenbrock2(x[1], x[2]) }
 #'
 #' @description The rosenbrock function of N variables for testing
 #' optimization methods. The global optima for the function is given by
-#' xi = 1, forall i E {1...N}, f(x) = 0.
+#' xi = 1, forall i E \{1...N\}, f(x) = 0.
 #'
 #' @param ... The variadic list of function variables.
 #'
@@ -140,7 +140,7 @@ f0.rosenbrockn<- function(...) {
 #'
 #' @description The rosenbrock function of N variables for testing
 #' optimization methods. The global optima for the function is given by
-#' xi = 1, forall i E {1...N}, f(x) = 0.
+#' xi = 1, forall i E \{1...N\}, f(x) = 0.
 #'
 #' @param x The vector of function parameters
 #'
@@ -163,7 +163,7 @@ f1.rosenbrockn<- function(x) {
 #'
 #' @description The rosenbrock function of 4 variables for testing
 #' optimization methods. The global optima for the function is given by
-#' xi = 1, forall i E {1...N}, f(x) = 0.
+#' xi = 1, forall i E \{1...N\}, f(x) = 0.
 #'
 #' @param x1 The first function variable
 #' @param x2 The second function variable
@@ -181,7 +181,7 @@ f0.rosenbrock4<- function(x1, x2, x3, x4) {
 #'
 #' @description The schwefel function of N variables for testing optimization
 #' methods. The global optima for the function is given by
-#' xi = 420.96874636, forall i E {1...N}, f(x) = 0. The range of xi is [-500,500]
+#' xi = 420.96874636, forall i E \{1...N\}, f(x) = 0. The range of xi is [-500,500]
 #'
 #' @param ... The variadic list of function variables.
 #'
@@ -201,7 +201,7 @@ f0.schwefel<- function(...) {
 #'
 #' @description The schwefel function of N variables for testing optimization
 #' methods. The global optima for the function is given by
-#' xi = 420.96874636, forall i E {1...N}, f(x) = 0. The range of xi is [-500,500]
+#' xi = 420.96874636, forall i E \{1...N\}, f(x) = 0. The range of xi is [-500,500]
 #'
 #' @param x The vector of function variables.
 #'
@@ -225,7 +225,7 @@ f1.schwefel<- function(x) {
 #'
 #' @description The schwefel function of N variables for testing optimization
 #' methods. The global optima for the function is given by
-#' xi = 420.96874636, forall i E {1...N}, f(x) = 0. The range of xi is [-500,500]
+#' xi = 420.96874636, forall i E \{1...N\}, f(x) = 0. The range of xi is [-500,500]
 #'
 #' @param x1 The first function variable
 #' @param x2 The second function variable
@@ -243,7 +243,7 @@ f0.schwefel4<- function(x1, x2, x3, x4) {
 #'
 #' @description The Cigar function of N variables for testing optimization
 #' methods. The global optima for the function is given by
-#' xi = 0, forall i E {1...N}, f(x) = 0.
+#' xi = 0, forall i E \{1...N\}, f(x) = 0.
 #'
 #' @param ... The variadic list of function variables.
 #'
@@ -263,7 +263,7 @@ f0.cigar<- function(...) {
 #'
 #' @description The Cigar function of N variables for testing optimization
 #' methods. The global optima for the function is given by
-#' xi = 0, forall i E {1...N}, f(x) = 0.
+#' xi = 0, forall i E \{1...N\}, f(x) = 0.
 #'
 #' @param x The vector of function variables.
 #'
@@ -289,7 +289,7 @@ f1.cigar<- function(x) {
 #'
 #' @description The Cigar function of four variables for testing optimization
 #' methods. The global optima for the function is given by
-#' xi = 0, forall i E {1...N}, f(x) = 0.
+#' xi = 0, forall i E \{1...N\}, f(x) = 0.
 #'
 #' @param x1 The first function variable
 #' @param x2 The second function variable
@@ -307,7 +307,7 @@ f0.cigar4<- function(x1, x2, x3, x4) {
 #'
 #' @description The schaffer function of N variables for testing
 #' optimization methods. The global optima for the function is given by
-#' xi = 0, forall i E {1...N}, f(x) = 0.
+#' xi = 0, forall i E \{1...N\}, f(x) = 0.
 #'
 #' @param ... The variadic list of function variables.
 #'
@@ -327,7 +327,7 @@ f0.schaffer<- function(...) {
 #'
 #' @description The schaffer function of N variables for testing
 #' optimization methods. The global optima for the function is given by
-#' xi = 0, forall i E {1...N}, f(x) = 0.
+#' xi = 0, forall i E \{1...N\}, f(x) = 0.
 #'
 #' @param x The vector of function parameters
 #'
@@ -350,7 +350,7 @@ f1.schaffer<- function(x) {
 #'
 #' @description The Schaffer function of four variables for testing optimization
 #' methods. The global optima for the function is given by
-#' xi = 0, forall i E {1...N}, f(x) = 0.
+#' xi = 0, forall i E \{1...N\}, f(x) = 0.
 #'
 #' @param x1 The first function variable
 #' @param x2 The second function variable
@@ -368,7 +368,7 @@ f0.schaffer4<- function(x1, x2, x3, x4) {
 #'
 #' @description The Bohachevsky function of N variables for testing
 #' optimization methods. The global optima for the function is given by
-#' xi = 0, forall i E {1...N}, f(x) = 0.
+#' xi = 0, forall i E \{1...N\}, f(x) = 0.
 #'
 #' @param ... The variadic list of function variables.
 #'
@@ -388,7 +388,7 @@ f0.bohachevsky<- function(...) {
 #'
 #' @description The Bohachevsky function of N variables for testing
 #' optimization methods. The global optima for the function is given by
-#' xi = 0, forall i E {1...N}, f(x) = 0.
+#' xi = 0, forall i E \{1...N\}, f(x) = 0.
 #'
 #' @param x The vector of function parameters
 #'
@@ -411,7 +411,7 @@ f1.bohachevsky<- function(x) {
 #'
 #' @description The Bohachevsky function of four variables for testing optimization
 #' methods. The global optima for the function is given by
-#' xi = 0, forall i E {1...N}, f(x) = 0.
+#' xi = 0, forall i E \{1...N\}, f(x) = 0.
 #'
 #' @param x1 The first function variable
 #' @param x2 The second function variable
@@ -429,7 +429,7 @@ f0.bohachevsky4<- function(x1, x2, x3, x4) {
 #'
 #' @description The griewank function of N variables for testing
 #' optimization methods. The global optima for the function is given by
-#' xi = 0, forall i E {1...N}, f(x) = 0.
+#' xi = 0, forall i E \{1...N\}, f(x) = 0.
 #'
 #' @param ... The variadic list of function variables.
 #'
@@ -449,7 +449,7 @@ f0.griewank<- function(...) {
 #'
 #' @description The griewank function of N variables for testing
 #' optimization methods. The global optima for the function is given by
-#' xi = 0, forall i E {1...N}, f(x) = 0.
+#' xi = 0, forall i E \{1...N\}, f(x) = 0.
 #'
 #' @param x The vector of function parameters
 #'
@@ -474,7 +474,7 @@ f1.griewank<- function(x) {
 #'
 #' @description The griewank function of four variables for testing optimization
 #' methods. The global optima for the function is given by
-#' xi = 0, forall i E {1...N}, f(x) = 0.
+#' xi = 0, forall i E \{1...N\}, f(x) = 0.
 #'
 #' @param x1 The first function variable
 #' @param x2 The second function variable
@@ -492,7 +492,7 @@ f0.griewank4<- function(x1, x2, x3, x4) {
 #'
 #' @description The ackley function of N variables for testing
 #' optimization methods. The global optima for the function is given by
-#' xi = 0, forall i E {1...N}, f(x) = 0.
+#' xi = 0, forall i E \{1...N\}, f(x) = 0.
 #' Domain xi E [-32.768, 32.768], for all i = 1, ..., d
 #'
 #' @param ... The variadic list of function variables.
@@ -513,7 +513,7 @@ f0.ackley<- function(...) {
 #'
 #' @description The ackley function of N variables for testing
 #' optimization methods. The global optima for the function is given by
-#' xi = 0, forall i E {1...N}, f(x) = 0.
+#' xi = 0, forall i E \{1...N\}, f(x) = 0.
 #' Domain xi E [-32.768, 32.768], for all i = 1, ..., d
 #'
 #' @param x The vector of function parameters
@@ -539,7 +539,7 @@ f1.ackley<- function(x) {
 #'
 #' @description The ackley function of four variables for testing optimization
 #' methods. The global optima for the function is given by
-#' xi = 0, forall i E {1...N}, f(x) = 0.
+#' xi = 0, forall i E \{1...N\}, f(x) = 0.
 #'
 #' @param x1 The first function variable
 #' @param x2 The second function variable
